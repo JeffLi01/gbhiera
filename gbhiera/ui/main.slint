@@ -1,0 +1,28 @@
+import {
+    GridBox, TextEdit, ListView, VerticalBox
+} from "std-widgets.slint";
+
+import {
+    HexView
+} from "hexview.slint";
+
+export component MainView inherits Window {
+    title: "Gbhiera";
+    preferred-width: 800px;
+    preferred-height: 600px;
+
+    GridBox {
+        Row {
+            HexView {
+            }
+            VerticalBox {
+                padding: 0px;
+                ListView {
+                }
+                TextEdit {
+                    text: "Element info!";
+                }
+            }
+        }
+    }
+}
