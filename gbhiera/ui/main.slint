@@ -1,24 +1,42 @@
 import {
-    GridBox, TextEdit, ListView, VerticalBox
+    Button, TextEdit, LineEdit, ListView, GridBox
 } from "std-widgets.slint";
 
 import {
     HexView
 } from "hexview.slint";
 
-export component MainView inherits Window {
+export component GbhieraUI inherits Window {
     title: "Gbhiera";
     preferred-width: 800px;
     preferred-height: 600px;
 
     in-out property <string> status: "Gbhiera";
+    in-out property <string> binary-path <=> le_binary.text;
+
+    callback reload-file(string);
+    callback show-open-dialog();
 
     GridBox {
         Row {
+            HorizontalLayout {
+                colspan: 2;
+                Text { text: "File:"; vertical-alignment: center; horizontal-alignment: right; }
+                le_binary := LineEdit {
+                    accepted => { root.reload-file(le_binary.text); }
+                    horizontal_stretch: 1;
+                }
+                open_button := Button {
+                    text: "📂";
+                    clicked => { root.show-open-dialog(); }
+                }
+            }
+        }
+
+        Row {
             HexView {
             }
-            VerticalBox {
-                padding: 0px;
+            VerticalLayout {
                 ListView {
                 }
                 TextEdit {

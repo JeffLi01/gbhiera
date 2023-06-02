@@ -7,7 +7,11 @@ build = "build.rs"
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
+anyhow = "1.0.71"
+futures = "0.3.28"
+rfd = "0.11.4"
 slint = "1.0.2"
+tokio = { version = "1.28.2", features = ["full"] }
 
 [build-dependencies]
 slint-build = "1.0.2"
