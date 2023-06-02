@@ -11,6 +11,8 @@ export component MainView inherits Window {
     preferred-width: 800px;
     preferred-height: 600px;
 
+    in-out property <string> status: "Gbhiera";
+
     GridBox {
         Row {
             HexView {
@@ -23,6 +25,13 @@ export component MainView inherits Window {
                     text: "Element info!";
                 }
             }
+        }
+
+        Text {
+            colspan: 2;
+            text: root.status;
+            wrap: word_wrap;
+            overflow: elide;
         }
     }
 }
