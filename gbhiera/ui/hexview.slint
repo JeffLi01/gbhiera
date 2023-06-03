@@ -1,4 +1,34 @@
 import { HorizontalBox, TextEdit, ListView, VerticalBox, ScrollView} from "std-widgets.slint";
 export component HexView inherits ScrollView {
-    viewport-width: (9 + 4 * 16 + 4) * 7px;
+    in-out property <string> font-family;
+    in-out property <length> font-size;
+    in-out property <int> total-line-count: 0;
+    in-out property <int> line-count;
+
+    pure callback get-line(int) -> string;
+
+    private property <length> char-width: font-size * 0.6;
+
+    viewport-width: (8 + 4 * 16 + 4) * char-width;
+    viewport-height: total-line-count * font-size;
+    line-count: floor(self.visible-height / font-size);
+
+    Rectangle {
+        x: 0px;
+        y: - root.viewport-y;
+        width: char-width * 9;
+        height: root.visible-height;
+        background: gray;
+    }
+
+    if (total-line-count > 0): Rectangle {
+        for line[i] in line-count:
+            Text {
+                x: 0px;
+                y: - root.viewport-y + font-size * i;
+                text: { get-line(line + (- root.viewport-y + font-size - 1px) / font-size) };
+                font-family: root.font-family;
+                font-size: root.font-size;
+            }
+    }
 }

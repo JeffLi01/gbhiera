@@ -13,9 +13,12 @@ export component GbhieraUI inherits Window {
 
     in-out property <string> status: "Gbhiera";
     in-out property <string> binary-path <=> le_binary.text;
+    in-out property <int> total-line-count <=> hexview.total-line-count;
+    in-out property <int> line-count <=> hexview.line-count;
 
     callback reload-file(string);
     callback show-open-dialog();
+    pure callback get-line <=> hexview.get-line;
 
     GridBox {
         Row {
@@ -34,7 +37,10 @@ export component GbhieraUI inherits Window {
         }
 
         Row {
-            HexView {
+            hexview := HexView {
+                font-family: "Courier New";
+                font-size: 12pt;
+                horizontal_stretch: 0.8;
             }
             VerticalLayout {
                 ListView {
@@ -42,6 +48,7 @@ export component GbhieraUI inherits Window {
                 TextEdit {
                     text: "Element info!";
                 }
+                horizontal_stretch: 0.2;
             }
         }
 
