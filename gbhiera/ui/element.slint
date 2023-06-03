@@ -1,0 +1,39 @@
+import { ListView } from "std-widgets.slint";
+
+export struct ElementAttribute {
+    // 0: normal, 1: open, 2: close
+    type: int,
+    level: int,
+    text: string,
+    color: color,
+}
+
+export component ElementExplorer inherits ListView {
+    in-out property <[ElementAttribute]> elements: [
+        { type: 1, level: 0, text: "ME", color: #FF0000 },
+        { type: 0, level: 1, text: "Descriptor", color: #FF0000 },
+        { type: 1, level: 1, text: "Regions", color: #FF0000 },
+        { type: 0, level: 2, text: "Region 0", color: #FF0000 },
+        { type: 0, level: 1, text: "Straps", color: #FF0000 },
+        { type: 2, level: 0, text: "BIOS", color: #ffff00 },
+    ];
+
+    for e[i] in elements: Rectangle {
+        height: 15pt;
+        Text {
+            x: e.level * 20pt;
+            text: e.type == 1 ? "\u{2BC6}"
+                : e.type == 2 ? "\u{2BC8}"
+                : "";
+            color: e.color;
+            font-size: 12pt;
+        }
+        Text {
+            x: e.level * 20pt + 12pt;
+            y: 3pt;
+            text: e.text;
+            color: e.color;
+            font-size: 12pt;
+        }
+    }
+}

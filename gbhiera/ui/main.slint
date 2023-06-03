@@ -6,6 +6,10 @@ import {
     HexView
 } from "hexview.slint";
 
+import {
+    ElementExplorer
+} from "element.slint";
+
 export component GbhieraUI inherits Window {
     title: "Gbhiera";
     preferred-width: 800px;
@@ -43,7 +47,7 @@ export component GbhieraUI inherits Window {
                 horizontal_stretch: 0.8;
             }
             VerticalLayout {
-                ListView {
+                ElementExplorer {
                 }
                 TextEdit {
                     text: "Element info!";
