@@ -7,13 +7,13 @@ use anyhow;
 
 #[derive(Clone, Debug, Default)]
 #[allow(dead_code)]
-pub struct BinaryData {
+pub struct FileLoader {
     path: PathBuf,
     bytes: Vec<u8>,
     lines: HashMap<i32, String>,
 }
 
-impl From<PathBuf> for BinaryData {
+impl From<PathBuf> for FileLoader {
     fn from(path: PathBuf) -> Self {
         Self {
             path,
@@ -22,7 +22,7 @@ impl From<PathBuf> for BinaryData {
     }
 }
 
-impl BinaryData {
+impl FileLoader {
     pub fn to_path(&self) -> &Path {
         &self.path
     }

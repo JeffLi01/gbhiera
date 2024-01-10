@@ -1,3 +1,3 @@
-mod binary;
+mod file_loader;
 
-pub use binary::BinaryData;
+pub use file_loader::FileLoader;

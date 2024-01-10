@@ -1,4 +1,4 @@
-use bhiera::BinaryData;
+use bhiera::FileLoader;
 use rfd;
 use tokio::sync::oneshot::Sender;
 use super::GbhieraUI;
@@ -82,11 +82,11 @@ async fn gbhiera_worker_loop(
     }
 }
 
-fn show_open_dialog(handle: slint::Weak<GbhieraUI>) -> Option<BinaryData> {
+fn show_open_dialog(handle: slint::Weak<GbhieraUI>) -> Option<FileLoader> {
     let mut dialog = rfd::FileDialog::new();
     dialog = dialog.set_title("Select a binary");
 
-    let binary_data = dialog.pick_file().map(|p| BinaryData::from(p));
+    let binary_data = dialog.pick_file().map(|p| FileLoader::from(p));
 
     if binary_data.is_none() {
         return None;
@@ -127,7 +127,7 @@ fn show_open_dialog(handle: slint::Weak<GbhieraUI>) -> Option<BinaryData> {
 
 }
 
-fn apply_binary_data(binary_data: &BinaryData, handle: slint::Weak<GbhieraUI>) {
+fn apply_binary_data(binary_data: &FileLoader, handle: slint::Weak<GbhieraUI>) {
     let total_line_count = ((binary_data.len() + 15) / 16) as i32;
     handle
         .clone()
