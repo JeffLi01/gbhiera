@@ -1,7 +1,7 @@
 use std::collections::HashMap;
-use std::path::{PathBuf, Path};
 use std::fs::File;
 use std::io::Read;
+use std::path::{Path, PathBuf};
 
 use anyhow;
 
@@ -66,18 +66,20 @@ impl FileLoader {
                 for b in bytes {
                     let c = match char::from_u32(*b as u32) {
                         Some(c) => {
-                            if c.is_ascii_graphic() { c } else { '.' }
+                            if c.is_ascii_graphic() {
+                                c
+                            } else {
+                                '.'
+                            }
                         }
-                        None => '.'
+                        None => '.',
                     };
                     s.push(c);
                 }
                 self.lines.insert(line, s.clone());
                 Some(s)
             }
-            None => {
-                None
-            }
+            None => None,
         }
     }
 }

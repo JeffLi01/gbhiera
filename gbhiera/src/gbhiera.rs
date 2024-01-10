@@ -1,27 +1,24 @@
-use bhiera::FileLoader;
-use rfd;
-use tokio::sync::oneshot::Sender;
 use super::GbhieraUI;
+use bhiera::FileLoader;
 use futures::future::FutureExt;
-use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
+use rfd;
 use slint::ComponentHandle;
+use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
+use tokio::sync::oneshot::Sender;
 
 #[derive(Debug)]
 pub enum GbhieraMessage {
     Quit,
     ShowOpenDialog,
-    Expose {
-        line: i32,
-        sender: Sender<String>,
-    },
+    Expose { line: i32, sender: Sender<String> },
 }
 
-pub struct GbhieraWorker {
+pub struct GbhieraApp {
     pub channel: UnboundedSender<GbhieraMessage>,
     worker_thread: std::thread::JoinHandle<()>,
 }
 
-impl GbhieraWorker {
+impl GbhieraApp {
     pub fn new(gbhiera_ui: &GbhieraUI) -> Self {
         let (channel, r) = tokio::sync::mpsc::unbounded_channel();
         let worker_thread = std::thread::spawn({
@@ -44,7 +41,6 @@ impl GbhieraWorker {
         self.worker_thread.join()
     }
 }
-
 
 async fn gbhiera_worker_loop(
     mut r: UnboundedReceiver<GbhieraMessage>,
@@ -69,7 +65,7 @@ async fn gbhiera_worker_loop(
                     apply_binary_data(&binary_data, handle.clone());
                 }
             }
-            GbhieraMessage::Expose{line, sender} => {
+            GbhieraMessage::Expose { line, sender } => {
                 if let Some(ref mut binary_data) = &mut binary_data {
                     if let Some(s) = binary_data.get_line(line) {
                         let _ = sender.send(s);
@@ -93,11 +89,7 @@ fn show_open_dialog(handle: slint::Weak<GbhieraUI>) -> Option<FileLoader> {
     }
 
     let mut binary_data = binary_data.unwrap();
-    let path_str = binary_data
-        .to_path()
-        .to_string_lossy()
-        .as_ref()
-        .into();
+    let path_str = binary_data.to_path().to_string_lossy().as_ref().into();
     handle
         .clone()
         .upgrade_in_event_loop(move |h| {
@@ -124,7 +116,6 @@ fn show_open_dialog(handle: slint::Weak<GbhieraUI>) -> Option<FileLoader> {
         }
     }
     Some(binary_data)
-
 }
 
 fn apply_binary_data(binary_data: &FileLoader, handle: slint::Weak<GbhieraUI>) {
