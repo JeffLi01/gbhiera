@@ -1,81 +1,50 @@
+use std::sync::{RwLock, Arc};
+
 use super::GbhieraUI;
-use bhiera::FileLoader;
-use futures::future::FutureExt;
+use bhiera::{FileLoader, DataProvider};
 use rfd;
 use slint::ComponentHandle;
-use tokio::sync::mpsc::{UnboundedReceiver, UnboundedSender};
-use tokio::sync::oneshot::Sender;
 
-#[derive(Debug)]
-pub enum GbhieraMessage {
-    Quit,
-    ShowOpenDialog,
-    Expose { line: i32, sender: Sender<String> },
-}
+use tokio::{self, runtime::Runtime};
 
 pub struct GbhieraApp {
-    pub channel: UnboundedSender<GbhieraMessage>,
-    worker_thread: std::thread::JoinHandle<()>,
+    data_provider: Option<FileLoader>,
 }
 
 impl GbhieraApp {
-    pub fn new(gbhiera_ui: &GbhieraUI) -> Self {
-        let (channel, r) = tokio::sync::mpsc::unbounded_channel();
-        let worker_thread = std::thread::spawn({
-            let handle_weak = gbhiera_ui.as_weak();
-            move || {
-                tokio::runtime::Runtime::new()
-                    .unwrap()
-                    .block_on(gbhiera_worker_loop(r, handle_weak))
-                    .unwrap()
-            }
-        });
+    pub fn new() -> Self {
         Self {
-            channel,
-            worker_thread,
+            data_provider: None,
         }
-    }
-
-    pub fn join(self) -> std::thread::Result<()> {
-        let _ = self.channel.send(GbhieraMessage::Quit);
-        self.worker_thread.join()
     }
 }
 
-async fn gbhiera_worker_loop(
-    mut r: UnboundedReceiver<GbhieraMessage>,
-    handle: slint::Weak<GbhieraUI>,
-) -> tokio::io::Result<()> {
-    let mut binary_data = None;
-    loop {
-        let m = futures::select! {
-            m = r.recv().fuse() => {
-                match m {
-                    None => return Ok(()),
-                    Some(m) => m,
-                }
-            }
-        };
-
-        match m {
-            GbhieraMessage::Quit => return Ok(()),
-            GbhieraMessage::ShowOpenDialog => {
-                binary_data = show_open_dialog(handle.clone());
-                if let Some(binary_data) = &binary_data {
-                    apply_binary_data(&binary_data, handle.clone());
-                }
-            }
-            GbhieraMessage::Expose { line, sender } => {
-                if let Some(ref mut binary_data) = &mut binary_data {
-                    if let Some(s) = binary_data.get_line(line) {
-                        let _ = sender.send(s);
-                        continue;
-                    }
-                }
-                let _ = sender.send("".into());
+pub fn setup(ui: &GbhieraUI, app: Arc<RwLock<GbhieraApp>>) {
+    let handle_weak = ui.as_weak();
+    let instance = app.clone();
+    ui.on_show_open_dialog({
+        move || {
+            let binary_data = show_open_dialog(handle_weak.clone());
+            if let Some(binary_data) = binary_data {
+                apply_binary_data(&binary_data, handle_weak.clone());
+                instance.write().unwrap().data_provider.replace(binary_data);
             }
         }
-    }
+    });
+    let instance = app.clone();
+    ui.on_get_line({
+        move |line| {
+            let rt = Runtime::new().unwrap();
+            rt.block_on(async {
+                if let Some(ref mut binary_data) = &mut instance.write().unwrap().data_provider {
+                    if let Some(s) = binary_data.get_line(line) {
+                        return s.into();
+                    }
+                }
+                "".into()
+            })
+        }
+    });
 }
 
 fn show_open_dialog(handle: slint::Weak<GbhieraUI>) -> Option<FileLoader> {

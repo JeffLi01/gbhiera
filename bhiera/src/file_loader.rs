@@ -5,6 +5,8 @@ use std::path::{Path, PathBuf};
 
 use anyhow;
 
+use crate::DataProvider;
+
 #[derive(Clone, Debug, Default)]
 #[allow(dead_code)]
 pub struct FileLoader {
@@ -31,10 +33,6 @@ impl FileLoader {
         let mut f = File::open(&self.path)?;
         f.read_to_end(&mut self.bytes)?;
         Ok(())
-    }
-
-    pub fn len(&self) -> usize {
-        self.bytes.len()
     }
 
     pub fn get_line(&mut self, line: i32) -> Option<String> {
@@ -81,5 +79,11 @@ impl FileLoader {
             }
             None => None,
         }
+    }
+}
+
+impl DataProvider for FileLoader {
+    fn len(&self) -> usize {
+        self.bytes.len()
     }
 }
