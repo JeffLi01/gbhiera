@@ -1,4 +1,4 @@
-use bhiera::{Binary, BinaryData};
+use bhiera::BinaryData;
 use rfd;
 use tokio::sync::oneshot::Sender;
 use super::GbhieraUI;
@@ -50,22 +50,9 @@ async fn gbhiera_worker_loop(
     mut r: UnboundedReceiver<GbhieraMessage>,
     handle: slint::Weak<GbhieraUI>,
 ) -> tokio::io::Result<()> {
-    let mut binary: Option<Binary> = None;
-    let mut binary_data: Option<BinaryData> = None;
-
-    let read_binary_future = read_binary(binary.clone(), handle.clone()).fuse();
-    futures::pin_mut!(
-        read_binary_future,
-    );
+    let mut binary_data = None;
     loop {
         let m = futures::select! {
-            res = read_binary_future => {
-                binary_data = res;
-                if let Some(binary_data) = &binary_data {
-                    apply_binary_data(binary_data, handle.clone());
-                }
-                continue;
-            }
             m = r.recv().fuse() => {
                 match m {
                     None => return Ok(()),
@@ -77,11 +64,13 @@ async fn gbhiera_worker_loop(
         match m {
             GbhieraMessage::Quit => return Ok(()),
             GbhieraMessage::ShowOpenDialog => {
-                binary = show_open_dialog();
-                read_binary_future.set(read_binary(binary.clone(), handle.clone()).fuse());
+                binary_data = show_open_dialog(handle.clone());
+                if let Some(binary_data) = &binary_data {
+                    apply_binary_data(&binary_data, handle.clone());
+                }
             }
             GbhieraMessage::Expose{line, sender} => {
-                if let Some(binary_data) = &mut binary_data {
+                if let Some(ref mut binary_data) = &mut binary_data {
                     if let Some(s) = binary_data.get_line(line) {
                         let _ = sender.send(s);
                         continue;
@@ -93,20 +82,18 @@ async fn gbhiera_worker_loop(
     }
 }
 
-fn show_open_dialog() -> Option<Binary> {
+fn show_open_dialog(handle: slint::Weak<GbhieraUI>) -> Option<BinaryData> {
     let mut dialog = rfd::FileDialog::new();
     dialog = dialog.set_title("Select a binary");
 
-    dialog.pick_file().map(|p| Binary::from(p))
-}
+    let binary_data = dialog.pick_file().map(|p| BinaryData::from(p));
 
-async fn read_binary(binary: Option<Binary>, handle: slint::Weak<GbhieraUI>) -> Option<BinaryData> {
-    if binary.is_none() {
+    if binary_data.is_none() {
         return None;
     }
-    let binary_str = binary
-        .clone()
-        .unwrap()
+
+    let mut binary_data = binary_data.unwrap();
+    let path_str = binary_data
         .to_path()
         .to_string_lossy()
         .as_ref()
@@ -114,20 +101,19 @@ async fn read_binary(binary: Option<Binary>, handle: slint::Weak<GbhieraUI>) -> 
     handle
         .clone()
         .upgrade_in_event_loop(move |h| {
-            h.set_binary_path(binary_str);
+            h.set_binary_path(path_str);
             h.set_status("Loading binary...".into());
         })
         .unwrap();
-    match BinaryData::load(binary.unwrap()) {
-        Ok(binary_data) => {
+
+    match binary_data.load() {
+        Ok(_) => {
             handle
                 .clone()
                 .upgrade_in_event_loop(move |h| {
                     h.set_status("Binary loaded".into());
                 })
                 .unwrap();
-
-            Some(binary_data)
         }
         Err(e) => {
             handle
@@ -135,9 +121,10 @@ async fn read_binary(binary: Option<Binary>, handle: slint::Weak<GbhieraUI>) -> 
                     h.set_status(format!("{}", e).into());
                 })
                 .unwrap();
-            None
         }
     }
+    Some(binary_data)
+
 }
 
 fn apply_binary_data(binary_data: &BinaryData, handle: slint::Weak<GbhieraUI>) {

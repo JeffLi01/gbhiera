@@ -1,3 +1,3 @@
 mod binary;
 
-pub use binary::{Binary, BinaryData};
+pub use binary::BinaryData;

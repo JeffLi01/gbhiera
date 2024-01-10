@@ -5,37 +5,32 @@ use std::io::Read;
 
 use anyhow;
 
-#[derive(Debug, Clone)]
-pub struct Binary(PathBuf);
-
-impl From<PathBuf> for Binary {
-    fn from(file: PathBuf) -> Self {
-        Self(file)
-    }
-}
-
-impl Binary {
-    pub fn to_path(&self) -> &Path {
-        &self.0
-    }
-}
-
 #[derive(Clone, Debug, Default)]
 #[allow(dead_code)]
 pub struct BinaryData {
+    path: PathBuf,
     bytes: Vec<u8>,
     lines: HashMap<i32, String>,
 }
 
-impl BinaryData {
-    pub fn load(binary: Binary) -> anyhow::Result<Self> {
-        let mut f = File::open(binary.to_path())?;
-        let mut bytes = vec![];
-        f.read_to_end(&mut bytes)?;
-        Ok(BinaryData{
-            bytes,
+impl From<PathBuf> for BinaryData {
+    fn from(path: PathBuf) -> Self {
+        Self {
+            path,
             ..Default::default()
-        })
+        }
+    }
+}
+
+impl BinaryData {
+    pub fn to_path(&self) -> &Path {
+        &self.path
+    }
+
+    pub fn load(&mut self) -> anyhow::Result<()> {
+        let mut f = File::open(&self.path)?;
+        f.read_to_end(&mut self.bytes)?;
+        Ok(())
     }
 
     pub fn len(&self) -> usize {
