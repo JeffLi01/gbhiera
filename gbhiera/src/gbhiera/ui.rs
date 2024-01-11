@@ -1,47 +1,33 @@
 use std::sync::{Arc, RwLock};
 
-use super::GbhieraUI;
-use bhiera::{DataProvider, FileDataProvider};
+use bhiera::{Bhiera, BhieraImpl, DataProvider, FileDataProvider};
 use rfd;
 use slint::ComponentHandle;
-
 use tokio::{self, runtime::Runtime};
 
-pub struct GbhieraApp {
-    data_provider: Option<FileDataProvider>,
-}
+use crate::GbhieraUI;
 
-impl GbhieraApp {
-    pub fn new() -> Self {
-        Self {
-            data_provider: None,
-        }
-    }
-}
-
-pub fn setup(ui: &GbhieraUI, app: Arc<RwLock<GbhieraApp>>) {
+pub fn setup(ui: &GbhieraUI, bhiera: Arc<RwLock<BhieraImpl>>) {
     let handle_weak = ui.as_weak();
-    let instance = app.clone();
+    let instance = bhiera.clone();
     ui.on_show_open_dialog({
         move || {
             let binary_data = show_open_dialog(handle_weak.clone());
             if let Some(binary_data) = binary_data {
-                apply_binary_data(&binary_data, handle_weak.clone());
-                instance.write().unwrap().data_provider.replace(binary_data);
+                apply_binary_data(handle_weak.clone(), &binary_data);
+                instance.write().unwrap().set_data_provider(binary_data);
             }
         }
     });
-    let instance = app.clone();
+    let instance = bhiera.clone();
     ui.on_get_line({
         move |line| {
             let rt = Runtime::new().unwrap();
             rt.block_on(async {
-                if let Some(ref mut binary_data) = &mut instance.write().unwrap().data_provider {
-                    if let Some(s) = binary_data.get_line(line) {
-                        return s.into();
-                    }
+                match instance.write().unwrap().get_line(line) {
+                    Some(s) => s.into(),
+                    None => "".into(),
                 }
-                "".into()
             })
         }
     });
@@ -60,7 +46,6 @@ fn show_open_dialog(handle: slint::Weak<GbhieraUI>) -> Option<FileDataProvider> 
     let mut binary_data = binary_data.unwrap();
     let path_str = binary_data.to_path().to_string_lossy().as_ref().into();
     handle
-        .clone()
         .upgrade_in_event_loop(move |h| {
             h.set_binary_path(path_str);
         })
@@ -74,10 +59,9 @@ fn show_open_dialog(handle: slint::Weak<GbhieraUI>) -> Option<FileDataProvider> 
     Some(binary_data)
 }
 
-fn apply_binary_data(binary_data: &FileDataProvider, handle: slint::Weak<GbhieraUI>) {
+fn apply_binary_data(handle: slint::Weak<GbhieraUI>, binary_data: &FileDataProvider) {
     let total_line_count = ((binary_data.len() + 15) / 16) as i32;
     handle
-        .clone()
         .upgrade_in_event_loop(move |h| {
             h.set_total_line_count(total_line_count);
         })
