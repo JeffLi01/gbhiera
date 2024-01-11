@@ -9,13 +9,13 @@ use crate::DataProvider;
 
 #[derive(Clone, Debug, Default)]
 #[allow(dead_code)]
-pub struct FileLoader {
+pub struct FileDataProvider {
     path: PathBuf,
     bytes: Vec<u8>,
     lines: HashMap<i32, String>,
 }
 
-impl From<PathBuf> for FileLoader {
+impl From<PathBuf> for FileDataProvider {
     fn from(path: PathBuf) -> Self {
         Self {
             path,
@@ -24,7 +24,7 @@ impl From<PathBuf> for FileLoader {
     }
 }
 
-impl FileLoader {
+impl FileDataProvider {
     pub fn to_path(&self) -> &Path {
         &self.path
     }
@@ -82,7 +82,7 @@ impl FileLoader {
     }
 }
 
-impl DataProvider for FileLoader {
+impl DataProvider for FileDataProvider {
     fn len(&self) -> usize {
         self.bytes.len()
     }

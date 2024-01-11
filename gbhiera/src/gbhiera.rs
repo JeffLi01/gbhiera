@@ -1,14 +1,14 @@
-use std::sync::{RwLock, Arc};
+use std::sync::{Arc, RwLock};
 
 use super::GbhieraUI;
-use bhiera::{FileLoader, DataProvider};
+use bhiera::{DataProvider, FileDataProvider};
 use rfd;
 use slint::ComponentHandle;
 
 use tokio::{self, runtime::Runtime};
 
 pub struct GbhieraApp {
-    data_provider: Option<FileLoader>,
+    data_provider: Option<FileDataProvider>,
 }
 
 impl GbhieraApp {
@@ -47,11 +47,11 @@ pub fn setup(ui: &GbhieraUI, app: Arc<RwLock<GbhieraApp>>) {
     });
 }
 
-fn show_open_dialog(handle: slint::Weak<GbhieraUI>) -> Option<FileLoader> {
+fn show_open_dialog(handle: slint::Weak<GbhieraUI>) -> Option<FileDataProvider> {
     let mut dialog = rfd::FileDialog::new();
     dialog = dialog.set_title("Select a binary");
 
-    let binary_data = dialog.pick_file().map(|p| FileLoader::from(p));
+    let binary_data = dialog.pick_file().map(|p| FileDataProvider::from(p));
 
     if binary_data.is_none() {
         return None;
@@ -63,36 +63,35 @@ fn show_open_dialog(handle: slint::Weak<GbhieraUI>) -> Option<FileLoader> {
         .clone()
         .upgrade_in_event_loop(move |h| {
             h.set_binary_path(path_str);
-            h.set_status("Loading binary...".into());
         })
         .unwrap();
+    notify(&handle, "Loading binary...");
 
     match binary_data.load() {
-        Ok(_) => {
-            handle
-                .clone()
-                .upgrade_in_event_loop(move |h| {
-                    h.set_status("Binary loaded".into());
-                })
-                .unwrap();
-        }
-        Err(e) => {
-            handle
-                .upgrade_in_event_loop(move |h| {
-                    h.set_status(format!("{}", e).into());
-                })
-                .unwrap();
-        }
+        Ok(_) => notify(&handle, "Binary loaded"),
+        Err(e) => notify(&handle, format!("{}", e)),
     }
     Some(binary_data)
 }
 
-fn apply_binary_data(binary_data: &FileLoader, handle: slint::Weak<GbhieraUI>) {
+fn apply_binary_data(binary_data: &FileDataProvider, handle: slint::Weak<GbhieraUI>) {
     let total_line_count = ((binary_data.len() + 15) / 16) as i32;
     handle
         .clone()
         .upgrade_in_event_loop(move |h| {
             h.set_total_line_count(total_line_count);
+        })
+        .unwrap();
+}
+
+fn notify<S>(handle: &slint::Weak<GbhieraUI>, msg: S)
+where
+    S: Into<String>,
+{
+    let msg = msg.into();
+    handle
+        .upgrade_in_event_loop(move |h| {
+            h.set_status(msg.into());
         })
         .unwrap();
 }

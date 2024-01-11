@@ -1,4 +1,4 @@
-use std::sync::{RwLock, Arc};
+use std::sync::{Arc, RwLock};
 
 slint::include_modules!();
 
