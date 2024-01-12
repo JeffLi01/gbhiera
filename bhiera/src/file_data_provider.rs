@@ -3,36 +3,29 @@ use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
 
-use anyhow;
-
-use crate::DataProvider;
+use crate::{DataProvider, Result};
 
 #[derive(Clone, Debug, Default)]
-#[allow(dead_code)]
 pub struct FileDataProvider {
     path: PathBuf,
     bytes: Vec<u8>,
     lines: HashMap<i32, String>,
 }
 
-impl From<PathBuf> for FileDataProvider {
-    fn from(path: PathBuf) -> Self {
-        Self {
-            path,
-            ..Default::default()
-        }
-    }
-}
-
 impl FileDataProvider {
+    pub fn new(path: PathBuf) -> Result<FileDataProvider> {
+        let mut bytes = Vec::new();
+        let mut f = File::open(&path)?;
+        f.read_to_end(&mut bytes)?;
+        Ok(Self {
+            path,
+            bytes,
+            ..Default::default()
+        })
+    }
+
     pub fn to_path(&self) -> &Path {
         &self.path
-    }
-
-    pub fn load(&mut self) -> anyhow::Result<()> {
-        let mut f = File::open(&self.path)?;
-        f.read_to_end(&mut self.bytes)?;
-        Ok(())
     }
 
     pub fn get_line(&mut self, line: i32) -> Option<String> {

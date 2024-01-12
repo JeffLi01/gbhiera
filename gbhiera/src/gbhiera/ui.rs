@@ -12,9 +12,9 @@ pub fn setup(ui: &GbhieraUI, bhiera: Arc<RwLock<BhieraImpl>>) {
     let instance = bhiera.clone();
     ui.on_show_open_dialog({
         move || {
-            let binary_data = show_open_dialog(handle_weak.clone());
-            if let Some(binary_data) = binary_data {
-                apply_binary_data(handle_weak.clone(), &binary_data);
+            let data_provider = load_data_provider(handle_weak.clone());
+            if let Some(binary_data) = data_provider {
+                apply_data_provider(handle_weak.clone(), &binary_data);
                 instance.write().unwrap().set_data_provider(binary_data);
             }
         }
@@ -33,33 +33,38 @@ pub fn setup(ui: &GbhieraUI, bhiera: Arc<RwLock<BhieraImpl>>) {
     });
 }
 
-fn show_open_dialog(handle: slint::Weak<GbhieraUI>) -> Option<FileDataProvider> {
+fn load_data_provider(handle: slint::Weak<GbhieraUI>) -> Option<FileDataProvider> {
     let mut dialog = rfd::FileDialog::new();
     dialog = dialog.set_title("Select a binary");
 
-    let binary_data = dialog.pick_file().map(|p| FileDataProvider::from(p));
+    let path = match dialog.pick_file() {
+        Some(path) => path,
+        None => return None,
+    };
 
-    if binary_data.is_none() {
-        return None;
-    }
+    notify(&handle, "Loading data...");
+    let binary_data = match FileDataProvider::new(path) {
+        Ok(provider) => {
+            notify(&handle, "Data loaded");
+            provider
+        }
+        Err(err) => {
+            notify(&handle, format!("Loading data...{}", err));
+            return None;
+        }
+    };
 
-    let mut binary_data = binary_data.unwrap();
     let path_str = binary_data.to_path().to_string_lossy().as_ref().into();
     handle
         .upgrade_in_event_loop(move |h| {
             h.set_binary_path(path_str);
         })
         .unwrap();
-    notify(&handle, "Loading binary...");
 
-    match binary_data.load() {
-        Ok(_) => notify(&handle, "Binary loaded"),
-        Err(e) => notify(&handle, format!("{}", e)),
-    }
     Some(binary_data)
 }
 
-fn apply_binary_data(handle: slint::Weak<GbhieraUI>, binary_data: &FileDataProvider) {
+fn apply_data_provider(handle: slint::Weak<GbhieraUI>, binary_data: &FileDataProvider) {
     let total_line_count = ((binary_data.len() + 15) / 16) as i32;
     handle
         .upgrade_in_event_loop(move |h| {
