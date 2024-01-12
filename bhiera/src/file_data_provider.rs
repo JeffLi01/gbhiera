@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::fs::File;
 use std::io::Read;
 use std::path::{Path, PathBuf};
@@ -9,7 +8,6 @@ use crate::{DataProvider, Result};
 pub struct FileDataProvider {
     path: PathBuf,
     bytes: Vec<u8>,
-    lines: HashMap<i32, String>,
 }
 
 impl FileDataProvider {
@@ -34,49 +32,18 @@ impl DataProvider for FileDataProvider {
         self.bytes.len()
     }
 
-    fn get_line(&mut self, line: i32) -> Option<String> {
-        if let Some(s) = self.lines.get(&line) {
-            return Some(s.to_owned());
-        }
-        let start = line as usize * 16;
-        if start >= self.len() {
-            return None;
+    fn get(&self, offset: usize, count: usize) -> Vec<u8> {
+        if offset >= self.len() {
+            return Vec::new();
         }
 
-        let mut end = line as usize * 16 + 16;
+        let mut end = offset + count;
         if end > self.len() {
             end = self.len();
         }
-        let chunk = self.bytes.get(start..end);
-        match chunk {
-            Some(bytes) => {
-                let mut s = format!("{:08X} ", line * 16);
-                for i in 0..bytes.len() {
-                    if i < 8 {
-                        s.push_str(&format!("{:02X} ", bytes[i]));
-                    } else {
-                        s.push_str(&format!(" {:02X}", bytes[i]));
-                    }
-                }
-                s.push_str(&format!("{:width$}", "", width = (16 - bytes.len()) * 3));
-                s.push_str("  ");
-                for b in bytes {
-                    let c = match char::from_u32(*b as u32) {
-                        Some(c) => {
-                            if c.is_ascii_graphic() {
-                                c
-                            } else {
-                                '.'
-                            }
-                        }
-                        None => '.',
-                    };
-                    s.push(c);
-                }
-                self.lines.insert(line, s.clone());
-                Some(s)
-            }
-            None => None,
+        match self.bytes.get(offset..end) {
+            Some(bytes) => bytes.to_owned(),
+            None => Vec::new(),
         }
     }
 }

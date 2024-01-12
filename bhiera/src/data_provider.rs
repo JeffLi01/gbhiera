@@ -1,4 +1,4 @@
 pub trait DataProvider {
     fn len(&self) -> usize;
-    fn get_line(&mut self, line: i32) -> Option<String>;
+    fn get(&self, offset: usize, count: usize) -> Vec<u8>;
 }
