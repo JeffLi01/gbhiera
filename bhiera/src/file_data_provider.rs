@@ -27,8 +27,14 @@ impl FileDataProvider {
     pub fn to_path(&self) -> &Path {
         &self.path
     }
+}
 
-    pub fn get_line(&mut self, line: i32) -> Option<String> {
+impl DataProvider for FileDataProvider {
+    fn len(&self) -> usize {
+        self.bytes.len()
+    }
+
+    fn get_line(&mut self, line: i32) -> Option<String> {
         if let Some(s) = self.lines.get(&line) {
             return Some(s.to_owned());
         }
@@ -72,11 +78,5 @@ impl FileDataProvider {
             }
             None => None,
         }
-    }
-}
-
-impl DataProvider for FileDataProvider {
-    fn len(&self) -> usize {
-        self.bytes.len()
     }
 }
