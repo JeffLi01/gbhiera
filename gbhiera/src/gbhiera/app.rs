@@ -1,19 +1,19 @@
 use std::sync::{Arc, RwLock};
 
-use bhiera::BhieraImpl;
+use bhiera::Bhiera;
 use slint::ComponentHandle;
 
 use crate::GbhieraUI;
 
 pub struct GbhieraApp {
-    bhiera: Arc<RwLock<BhieraImpl>>,
+    bhiera: Arc<RwLock<Bhiera>>,
     ui: GbhieraUI,
 }
 
 impl GbhieraApp {
     pub fn new(ui: GbhieraUI) -> Self {
         Self {
-            bhiera: Arc::new(RwLock::new(BhieraImpl::new())),
+            bhiera: Arc::new(RwLock::new(Bhiera::new())),
             ui,
         }
     }

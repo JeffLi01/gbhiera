@@ -1,13 +1,13 @@
 use std::sync::{Arc, RwLock};
 
-use bhiera::{Bhiera, BhieraImpl, DataProvider, FileDataProvider};
+use bhiera::{Bhiera, DataProvider, FileDataProvider, View};
 use rfd;
 use slint::ComponentHandle;
 use tokio::{self, runtime::Runtime};
 
 use crate::GbhieraUI;
 
-pub fn setup(ui: &GbhieraUI, bhiera: Arc<RwLock<BhieraImpl>>) {
+pub fn setup(ui: &GbhieraUI, bhiera: Arc<RwLock<Bhiera>>) {
     let handle_weak = ui.as_weak();
     let instance = bhiera.clone();
     ui.on_show_open_dialog({

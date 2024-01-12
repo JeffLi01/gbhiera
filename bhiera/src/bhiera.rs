@@ -1,10 +1,10 @@
 use crate::DataProvider;
 
-pub struct BhieraImpl {
+pub struct Bhiera {
     data_provider: Option<Box<dyn DataProvider>>,
 }
 
-impl BhieraImpl {
+impl Bhiera {
     pub fn new() -> Self {
         Self {
             data_provider: None,
@@ -12,12 +12,12 @@ impl BhieraImpl {
     }
 }
 
-pub trait Bhiera {
+pub trait View {
     fn set_data_provider(&mut self, provider: impl DataProvider + 'static);
     fn get_line(&mut self, line: i32) -> Option<String>;
 }
 
-impl Bhiera for BhieraImpl {
+impl View for Bhiera {
     fn set_data_provider(&mut self, provider: impl DataProvider + 'static) {
         self.data_provider.replace(Box::new(provider));
     }
