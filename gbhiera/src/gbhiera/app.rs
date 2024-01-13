@@ -19,7 +19,7 @@ impl GbhieraApp {
     }
 
     pub fn run(&self) {
-        super::setup(&self.ui, self.bhiera.clone());
+        crate::ui::setup(&self.ui, self.bhiera.clone());
         self.ui.run().unwrap();
     }
 }

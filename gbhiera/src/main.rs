@@ -1,8 +1,9 @@
+mod gbhiera;
+mod ui;
+
 use gbhiera::GbhieraApp;
 
 slint::include_modules!();
-
-mod gbhiera;
 
 fn main() {
     let gbhiera_ui = GbhieraUI::new().unwrap();
