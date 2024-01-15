@@ -1,34 +1,55 @@
-import { HorizontalBox, TextEdit, ListView, VerticalBox, ScrollView} from "std-widgets.slint";
-export component HexView inherits ScrollView {
+import { HorizontalBox, TextEdit, ListView, VerticalBox, ScrollView, Slider, GridBox} from "std-widgets.slint";
+export component HexView inherits Rectangle {
     in-out property <string> font-family;
     in-out property <length> font-size;
     in-out property <int> total-line-count: 0;
     in-out property <int> line-count;
 
-    pure callback get-line(int) -> string;
+    pure callback render_plot(float /* pitch */, float /* yaw */, float /* amplitude */) -> image;
 
     private property <length> char-width: font-size * 0.6;
 
-    viewport-width: (8 + 4 * 16 + 4) * char-width;
-    viewport-height: total-line-count * font-size;
-    line-count: floor(self.visible-height / font-size);
+    preferred-width: (8 + 4 * 16 + 4) * char-width;
+    preferred-height: total-line-count * font-size;
+    line-count: floor(self.height / font-size);
 
-    Rectangle {
-        x: 0px;
-        y: - root.viewport-y;
-        width: char-width * 9;
-        height: root.visible-height;
-        background: gray;
-    }
+    in-out property <float> pitch: 0.15;
+    in-out property <float> yaw: 0.5;
 
-    if (total-line-count > 0): Rectangle {
-        for line[i] in line-count:
-            Text {
-                x: 0px;
-                y: - root.viewport-y + font-size * i;
-                text: { get-line(line + (- root.viewport-y + font-size - 1px) / font-size) };
-                font-family: root.font-family;
-                font-size: root.font-size;
+    GridBox {
+        hex-view := Image {
+            row: 0;
+            col: 0;
+            width: 1000px;
+            height: 360px;
+            // source: root.render_plot(root.pitch, root.yaw, 100 / 10);
+            source: root.render_plot(root.pitch, vscroll.viewport-y / 100px, 100 / 10);
+            // colorize: red;
+            touch := TouchArea {
+                property <float> pressed-pitch;
+                property <float> pressed-yaw;
+                pointer-event(event) => {
+                    if (event.button == PointerEventButton.left && event.kind == PointerEventKind.down) {
+                        self.pressed-pitch = root.pitch;
+                        self.pressed-yaw = root.yaw;
+                    }
+                }
+                moved => {
+                    if (self.enabled && self.pressed) {
+                        root.pitch = self.pressed-pitch + (touch.mouse-y - touch.pressed-y) / self.height * 3.14;
+                        root.yaw = self.pressed-yaw - (touch.mouse-x - touch.pressed-x) / self.width * 3.14;
+                    }
+                }
+                mouse-cursor: self.pressed ? MouseCursor.grabbing : MouseCursor.grab;
             }
+        }
+
+        vscroll := ScrollView {
+            row: 0;
+            col: 1;
+            width: 1px;
+            viewport-width: 1px;
+            viewport-height: 800px;
+        }
     }
 }

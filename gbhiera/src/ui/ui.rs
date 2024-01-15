@@ -3,9 +3,9 @@ use std::sync::{Arc, RwLock};
 use bhiera::{Bhiera, DataProvider, FileDataProvider, View};
 use rfd;
 use slint::ComponentHandle;
-use tokio::{self, runtime::Runtime};
 
 use crate::GbhieraUI;
+use super::render_plot;
 
 pub fn setup(ui: &GbhieraUI, bhiera: Arc<RwLock<Bhiera>>) {
     let handle_weak = ui.as_weak();
@@ -19,18 +19,7 @@ pub fn setup(ui: &GbhieraUI, bhiera: Arc<RwLock<Bhiera>>) {
             }
         }
     });
-    let instance = bhiera.clone();
-    ui.on_get_line({
-        move |line| {
-            let rt = Runtime::new().unwrap();
-            rt.block_on(async {
-                match instance.write().unwrap().get_line(line) {
-                    Some(s) => s.into(),
-                    None => "".into(),
-                }
-            })
-        }
-    });
+    ui.on_render_plot(render_plot);
 }
 
 fn load_data_provider(handle: slint::Weak<GbhieraUI>) -> Option<FileDataProvider> {

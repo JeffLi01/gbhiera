@@ -23,7 +23,7 @@ export component GbhieraUI inherits Window {
 
     callback reload-file(string);
     callback show-open-dialog();
-    pure callback get-line <=> hexview.get-line;
+    pure callback render_plot <=> hexview.render_plot;
 
     GridBox {
         Row {
