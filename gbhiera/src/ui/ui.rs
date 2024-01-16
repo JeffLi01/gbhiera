@@ -28,7 +28,11 @@ pub fn setup(ui: &GbhieraUI, bhiera: Arc<RwLock<Bhiera>>) {
             let start_line = (view_start + config.char_height as i32 - 1) / config.char_height as i32;
             let line_count = view_height as u32 / config.char_height;
             let bytes = instance.read().unwrap().get_bytes(start_line as usize * 16, line_count as usize * 16);
-            hexview::render_plot(&config, start_line, view_height, bytes)
+            if bytes.is_empty() {
+                slint::Image::default()
+            } else {
+                hexview::render_plot(&config, start_line, view_height, bytes)
+            }
         }
     });
 }
