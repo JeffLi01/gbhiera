@@ -5,24 +5,26 @@ use rfd;
 use slint::ComponentHandle;
 
 use crate::GbhieraUI;
-use super::hexview;
+use super::hexview::{self, PlotConfig};
 
 pub fn setup(ui: &GbhieraUI, bhiera: Arc<RwLock<Bhiera>>) {
+    let plot_config = PlotConfig::new("Courier New", 18.0);
     let handle_weak = ui.as_weak();
     let instance = bhiera.clone();
+    let config = plot_config.clone();
     ui.on_show_open_dialog({
         move || {
             let data_provider = load_data_provider(handle_weak.clone());
             if let Some(binary_data) = data_provider {
-                apply_data_provider(handle_weak.clone(), &binary_data);
+                apply_data_provider(handle_weak.clone(), &binary_data, &config);
                 instance.write().unwrap().set_data_provider(binary_data);
             }
         }
     });
     let instance = bhiera.clone();
+    let config = plot_config.clone();
     ui.on_render_plot({
         move |view_start, view_height| {
-            let config = hexview::setup();
             let start_line = (view_start + config.char_height as i32 - 1) / config.char_height as i32;
             let line_count = view_height as u32 / config.char_height;
             let bytes = instance.read().unwrap().get_bytes(start_line as usize * 16, line_count as usize * 16);
@@ -62,8 +64,7 @@ fn load_data_provider(handle: slint::Weak<GbhieraUI>) -> Option<FileDataProvider
     Some(binary_data)
 }
 
-fn apply_data_provider(handle: slint::Weak<GbhieraUI>, binary_data: &FileDataProvider) {
-    let config = hexview::setup();
+fn apply_data_provider(handle: slint::Weak<GbhieraUI>, binary_data: &FileDataProvider, config: &PlotConfig) {
     let hexview_width = config.width;
     let total_line_count = (binary_data.len() + 15) / 16;
     let hexview_height = config.char_height * total_line_count as u32;

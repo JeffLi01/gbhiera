@@ -2,11 +2,13 @@ use plotters::{prelude::*, style::full_palette::{GREY_100, GREY_300, GREY_600}};
 use rgb::RGB;
 use slint::SharedPixelBuffer;
 
+#[derive(Clone)]
 pub struct PlotStyle {
     bg: RGBColor,
     fg: RGBColor,
 }
 
+#[derive(Clone)]
 pub struct PlotConfig<'a> {
     pub width: u32,
     char_width: u32,
@@ -21,31 +23,33 @@ pub struct PlotConfig<'a> {
     style: TextStyle<'a>,
 }
 
-pub fn setup() -> PlotConfig<'static> {
-    let mut buf: Vec<_> = vec![0; 3];
-    let backend = BitMapBackend::with_buffer(&mut buf, (1, 1));
-    let style = TextStyle::from(("Courier New", 18).into_font()).color(&BLACK);
-    let (char_width, char_height): (u32, u32) = backend.estimate_text_size("C", &style).unwrap();
-    let (hex_width, _): (u32, u32) = backend.estimate_text_size("HH", &style).unwrap();
-    let (offset_width, _): (u32, u32) = backend.estimate_text_size("00000000", &style).unwrap();
-    // println!("offset_width: {}, hex_width: {}, char_width: {}", offset_width, hex_width, char_width);
-    drop(backend);
-    let hex_view_width = char_width * 16 + hex_width * 16 + char_width * 3;
-    let char_view_width = char_width * 16;
-    let img_width = offset_width + hex_view_width + char_view_width + char_width;
+impl<'a> PlotConfig<'a> {
+    pub fn new(typeface: &'a str, size: f64) -> Self {
+        let mut buf: Vec<_> = vec![0; 3];
+        let backend = BitMapBackend::with_buffer(&mut buf, (1, 1));
+        let style = TextStyle::from((typeface, size).into_font()).color(&BLACK);
+        let (char_width, char_height): (u32, u32) = backend.estimate_text_size("C", &style).unwrap();
+        let (hex_width, _): (u32, u32) = backend.estimate_text_size("HH", &style).unwrap();
+        let (offset_width, _): (u32, u32) = backend.estimate_text_size("00000000", &style).unwrap();
+        // println!("offset_width: {}, hex_width: {}, char_width: {}", offset_width, hex_width, char_width);
+        drop(backend);
+        let hex_view_width = char_width * 16 + hex_width * 16 + char_width * 3;
+        let char_view_width = char_width * 16;
+        let img_width = offset_width + hex_view_width + char_view_width + char_width;
 
-    PlotConfig {
-        width: img_width,
-        char_width,
-        char_height,
-        hex_width,
-        offset_width,
-        hex_view_width,
-        char_view_width,
-        offset: PlotStyle { bg: GREY_300, fg: GREY_600 },
-        hex: PlotStyle { bg: WHITE, fg: BLACK },
-        char: PlotStyle { bg: GREY_100, fg: BLACK },
-        style,
+        Self {
+            width: img_width,
+            char_width,
+            char_height,
+            hex_width,
+            offset_width,
+            hex_view_width,
+            char_view_width,
+            offset: PlotStyle { bg: GREY_300, fg: GREY_600 },
+            hex: PlotStyle { bg: WHITE, fg: BLACK },
+            char: PlotStyle { bg: GREY_100, fg: BLACK },
+            style,
+        }
     }
 }
 
@@ -89,7 +93,9 @@ fn do_plot(config: &PlotConfig, start_line: usize, bytes: Vec<u8>, pixel_buffer:
                 } else {
                     '.'
                 },
-                None => '.',
+                None => {
+                    '.'
+                },
             };
             format!("{}", c)
         };
@@ -102,7 +108,6 @@ fn do_plot(config: &PlotConfig, start_line: usize, bytes: Vec<u8>, pixel_buffer:
 }
 
 pub fn render_plot(config: &PlotConfig, start_line: i32, img_height: i32, bytes: Vec<u8>) -> slint::Image {
-    println!("render_plot");
     let mut pixel_buffer = SharedPixelBuffer::new(config.width, img_height as u32);
     pre_do_plot(config, &mut pixel_buffer);
     do_plot(config, start_line as usize, bytes, &mut pixel_buffer).unwrap();
