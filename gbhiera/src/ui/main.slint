@@ -18,8 +18,9 @@ export component GbhieraUI inherits Window {
 
     in-out property <string> status: "Gbhiera";
     in-out property <string> binary-path <=> le_binary.text;
-    in-out property <int> total-line-count <=> hexview.total-line-count;
-    in-out property <int> line-count <=> hexview.line-count;
+
+    in-out property <length> hexview_width <=> hexview.viewport-width;
+    in-out property <length> hexview_height <=> hexview.viewport-height;
 
     callback reload-file(string);
     callback show-open-dialog();
@@ -43,8 +44,6 @@ export component GbhieraUI inherits Window {
 
         Row {
             hexview := HexView {
-                font-family: "Courier New";
-                font-size: 14pt;
                 horizontal_stretch: 0.8;
             }
             VerticalLayout {

@@ -5,7 +5,7 @@ use rfd;
 use slint::ComponentHandle;
 
 use crate::GbhieraUI;
-use super::render_plot;
+use super::hexview;
 
 pub fn setup(ui: &GbhieraUI, bhiera: Arc<RwLock<Bhiera>>) {
     let handle_weak = ui.as_weak();
@@ -21,9 +21,12 @@ pub fn setup(ui: &GbhieraUI, bhiera: Arc<RwLock<Bhiera>>) {
     });
     let instance = bhiera.clone();
     ui.on_render_plot({
-        move |start_line, line_count, img_height| {
+        move |view_start, view_height| {
+            let config = hexview::setup(view_height as u32);
+            let start_line = (view_start + config.char_height as i32 - 1) / config.char_height as i32;
+            let line_count = view_height as u32 / config.char_height;
             let bytes = instance.read().unwrap().get_bytes(start_line as usize * 16, line_count as usize * 16);
-            render_plot(start_line, img_height, bytes)
+            hexview::render_plot(config, start_line, view_height, bytes)
         }
     });
 }
@@ -60,10 +63,14 @@ fn load_data_provider(handle: slint::Weak<GbhieraUI>) -> Option<FileDataProvider
 }
 
 fn apply_data_provider(handle: slint::Weak<GbhieraUI>, binary_data: &FileDataProvider) {
-    let total_line_count = ((binary_data.len() + 15) / 16) as i32;
+    let config = hexview::setup(1000);
+    let hexview_width = config.width;
+    let total_line_count = (binary_data.len() + 15) / 16;
+    let hexview_height = config.char_height * total_line_count as u32;
     handle
         .upgrade_in_event_loop(move |h| {
-            h.set_total_line_count(total_line_count);
+            h.set_hexview_width(hexview_width as f32);
+            h.set_hexview_height(hexview_height as f32);
         })
         .unwrap();
 }

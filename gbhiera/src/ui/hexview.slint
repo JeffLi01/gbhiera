@@ -1,28 +1,11 @@
 import { HorizontalBox, TextEdit, ListView, VerticalBox, ScrollView, Slider, GridBox} from "std-widgets.slint";
 export component HexView inherits ScrollView {
-    in-out property <string> font-family;
-    in-out property <length> font-size;
-    in-out property <int> total-line-count: 0;
-    in-out property <int> line-count;
-
-    pure callback render_plot(int /* start_line */, int /* line_count */, int /* height */) -> image;
-
-    private property <length> char-width: font-size * 0.6;
-
-    viewport-width: (8 + 4 * 16 + 4) * char-width;
-    viewport-height: total-line-count * font-size;
-    line-count: floor(self.height / font-size);
-
-    protected pure function calc_start_line(y: length) -> int {
-        floor((y + font-size - 1px) / font-size)
-    }
+    pure callback render_plot(int /* view_start */, int /* view_height */) -> image;
 
     hex-view := Image {
         x: 0;
         y: - root.viewport-y;
-        // width: 1000px;
-        // height: 360px;
-        source: root.render_plot(calc_start_line(self.y), root.line-count, root.visible-height / 1px);
+        source: root.render_plot(self.y / 1px, root.visible-height / 1px);
         // image-fit: contain;
         touch := TouchArea {
             property <float> pressed-pitch;

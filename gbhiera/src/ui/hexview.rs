@@ -2,16 +2,16 @@ use plotters::{prelude::*, style::full_palette::{GREY_100, GREY_300, GREY_600}};
 use rgb::RGB;
 use slint::SharedPixelBuffer;
 
-struct PlotStyle {
+pub struct PlotStyle {
     bg: RGBColor,
     fg: RGBColor,
 }
 
-struct PlotConfig<'a> {
-    width: u32,
+pub struct PlotConfig<'a> {
+    pub width: u32,
     height: u32,
     char_width: u32,
-    char_height: u32,
+    pub char_height: u32,
     hex_width: u32,
     offset_width: u32,
     hex_view_width: u32,
@@ -22,7 +22,7 @@ struct PlotConfig<'a> {
     style: TextStyle<'a>,
 }
 
-fn setup(img_height: u32) -> PlotConfig<'static> {
+pub fn setup(img_height: u32) -> PlotConfig<'static> {
     let mut buf: Vec<_> = vec![0; 3];
     let backend = BitMapBackend::with_buffer(&mut buf, (1, 1));
     let style = TextStyle::from(("Courier New", 18).into_font()).color(&BLACK);
@@ -103,9 +103,8 @@ fn do_plot(config: &PlotConfig, start_line: usize, bytes: Vec<u8>, pixel_buffer:
     Ok(())
 }
 
-pub fn render_plot(start_line: i32, img_height: i32, bytes: Vec<u8>) -> slint::Image {
+pub fn render_plot(config: PlotConfig, start_line: i32, img_height: i32, bytes: Vec<u8>) -> slint::Image {
     println!("render_plot");
-    let config = setup(img_height as u32);
     let mut pixel_buffer = SharedPixelBuffer::new(config.width, config.height);
     pre_do_plot(&config, &mut pixel_buffer);
     do_plot(&config, start_line as usize, bytes, &mut pixel_buffer).unwrap();
