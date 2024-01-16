@@ -1,55 +1,45 @@
 import { HorizontalBox, TextEdit, ListView, VerticalBox, ScrollView, Slider, GridBox} from "std-widgets.slint";
-export component HexView inherits Rectangle {
+export component HexView inherits ScrollView {
     in-out property <string> font-family;
     in-out property <length> font-size;
     in-out property <int> total-line-count: 0;
     in-out property <int> line-count;
 
-    pure callback render_plot(float /* pitch */, float /* yaw */, float /* amplitude */) -> image;
+    pure callback render_plot(int /* start_line */, int /* line_count */, int /* height */) -> image;
 
     private property <length> char-width: font-size * 0.6;
 
-    preferred-width: (8 + 4 * 16 + 4) * char-width;
-    preferred-height: total-line-count * font-size;
+    viewport-width: (8 + 4 * 16 + 4) * char-width;
+    viewport-height: total-line-count * font-size;
     line-count: floor(self.height / font-size);
 
-    in-out property <float> pitch: 0.15;
-    in-out property <float> yaw: 0.5;
+    protected pure function calc_start_line(y: length) -> int {
+        floor((y + font-size - 1px) / font-size)
+    }
 
-    GridBox {
-        hex-view := Image {
-            row: 0;
-            col: 0;
-            width: 1000px;
-            height: 360px;
-            // source: root.render_plot(root.pitch, root.yaw, 100 / 10);
-            source: root.render_plot(root.pitch, vscroll.viewport-y / 100px, 100 / 10);
-            // colorize: red;
-            touch := TouchArea {
-                property <float> pressed-pitch;
-                property <float> pressed-yaw;
-                pointer-event(event) => {
-                    if (event.button == PointerEventButton.left && event.kind == PointerEventKind.down) {
-                        self.pressed-pitch = root.pitch;
-                        self.pressed-yaw = root.yaw;
-                    }
+    hex-view := Image {
+        x: 0;
+        y: - root.viewport-y;
+        // width: 1000px;
+        // height: 360px;
+        source: root.render_plot(calc_start_line(self.y), root.line-count, root.visible-height / 1px);
+        // image-fit: contain;
+        touch := TouchArea {
+            property <float> pressed-pitch;
+            property <float> pressed-yaw;
+            pointer-event(event) => {
+                if (event.button == PointerEventButton.left && event.kind == PointerEventKind.down) {
+                    // self.pressed-pitch = root.pitch;
+                    // self.pressed-yaw = root.yaw;
                 }
-                moved => {
-                    if (self.enabled && self.pressed) {
-                        root.pitch = self.pressed-pitch + (touch.mouse-y - touch.pressed-y) / self.height * 3.14;
-                        root.yaw = self.pressed-yaw - (touch.mouse-x - touch.pressed-x) / self.width * 3.14;
-                    }
-                }
-                mouse-cursor: self.pressed ? MouseCursor.grabbing : MouseCursor.grab;
             }
-        }
-
-        vscroll := ScrollView {
-            row: 0;
-            col: 1;
-            width: 1px;
-            viewport-width: 1px;
-            viewport-height: 800px;
+            moved => {
+                if (self.enabled && self.pressed) {
+                    // root.pitch = self.pressed-pitch + (touch.mouse-y - touch.pressed-y) / self.height * 3.14;
+                    // root.yaw = self.pressed-yaw - (touch.mouse-x - touch.pressed-x) / self.width * 3.14;
+                }
+            }
+            // mouse-cursor: self.pressed ? MouseCursor.grabbing : MouseCursor.grab;
         }
     }
 }

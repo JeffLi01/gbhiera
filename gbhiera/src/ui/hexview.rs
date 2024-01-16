@@ -22,7 +22,7 @@ struct PlotConfig<'a> {
     style: TextStyle<'a>,
 }
 
-fn setup() -> PlotConfig<'static> {
+fn setup(img_height: u32) -> PlotConfig<'static> {
     let mut buf: Vec<_> = vec![0; 3];
     let backend = BitMapBackend::with_buffer(&mut buf, (1, 1));
     let style = TextStyle::from(("Courier New", 18).into_font()).color(&BLACK);
@@ -34,7 +34,6 @@ fn setup() -> PlotConfig<'static> {
     let hex_view_width = char_width * 16 + hex_width * 16 + char_width * 3;
     let char_view_width = char_width * 16;
     let img_width = offset_width + hex_view_width + char_view_width + char_width;
-    let img_height = char_height * 32;
 
     PlotConfig {
         width: img_width,
@@ -65,28 +64,28 @@ fn pre_do_plot(config: &PlotConfig, pixel_buffer: &mut SharedPixelBuffer<RGB<u8>
     drop(backend);
 }
 
-fn do_plot(config: &PlotConfig, pixel_buffer: &mut SharedPixelBuffer<RGB<u8>>) -> Result<(), Box<dyn std::error::Error>> {
+fn do_plot(config: &PlotConfig, start_line: usize, bytes: Vec<u8>, pixel_buffer: &mut SharedPixelBuffer<RGB<u8>>) -> Result<(), Box<dyn std::error::Error>> {
     let size = (pixel_buffer.width(), pixel_buffer.height());
     let mut backend = BitMapBackend::with_buffer(pixel_buffer.make_mut_bytes(), size);
 
     let offset_style = &config.style;
-    for i in 0..256 {
+    let line_count = (bytes.len() + 15) / 16;
+    for line in 0..(line_count) {
+        let offset = format!("{:08X}", (start_line + line) << 4);
+        backend.draw_text(&offset, offset_style, (0, (line * config.char_height as usize) as i32)).unwrap();
+    }
+    for (i, byte) in bytes.iter().enumerate() {
         let line = i / 16;
-        if (i % 16) == 0 {
-            let offset = format!("{:08X}", line * 16);
-            backend.draw_text(&offset, offset_style, (0, (line * config.char_height) as i32)).unwrap();
-        }
-        let byte_hex = format!("{:02X}", i % 256);
+        let byte_hex = format!("{:02X}", byte);
         let index = i % 16;
         let x = if index < 8 {
-            config.offset_width + config.char_width + (config.char_width + config.hex_width) * index
+            config.offset_width + config.char_width + (config.char_width + config.hex_width) * index as u32
         } else {
-            config.offset_width + config.char_width * 2 + (config.char_width + config.hex_width) * index
+            config.offset_width + config.char_width * 2 + (config.char_width + config.hex_width) * index as u32
         } as i32;
-        backend.draw_text(&byte_hex, &config.style, (x, (line * config.char_height) as i32)).unwrap();
+        backend.draw_text(&byte_hex, &config.style, (x, (line as u32 * config.char_height) as i32)).unwrap();
         let byte_char = {
-            let byte = i % 256;
-            let c = match char::from_u32(byte as u32) {
+            let c = match char::from_u32(*byte as u32) {
                 Some(c) => if c.is_ascii_graphic() {
                     c
                 } else {
@@ -96,7 +95,7 @@ fn do_plot(config: &PlotConfig, pixel_buffer: &mut SharedPixelBuffer<RGB<u8>>) -
             };
             format!("{}", c)
         };
-        backend.draw_text(&byte_char, &config.style, ((config.offset_width + config.hex_view_width + (i % 16) * config.char_width) as i32, (line * config.char_height) as i32)).unwrap();
+        backend.draw_text(&byte_char, &config.style, ((config.offset_width + config.hex_view_width + (i as u32 % 16) * config.char_width) as i32, (line as u32 * config.char_height) as i32)).unwrap();
     }
 
     backend.present().unwrap();
@@ -104,10 +103,11 @@ fn do_plot(config: &PlotConfig, pixel_buffer: &mut SharedPixelBuffer<RGB<u8>>) -
     Ok(())
 }
 
-pub fn render_plot(pitch: f32, yaw: f32, amplitude: f32) -> slint::Image {
-    let config = setup();
+pub fn render_plot(start_line: i32, img_height: i32, bytes: Vec<u8>) -> slint::Image {
+    println!("render_plot");
+    let config = setup(img_height as u32);
     let mut pixel_buffer = SharedPixelBuffer::new(config.width, config.height);
     pre_do_plot(&config, &mut pixel_buffer);
-    do_plot(&config, &mut pixel_buffer).unwrap();
+    do_plot(&config, start_line as usize, bytes, &mut pixel_buffer).unwrap();
     slint::Image::from_rgb8(pixel_buffer)
 }

@@ -13,8 +13,8 @@ import {
 export component GbhieraUI inherits Window {
     title: "Gbhiera";
     icon: @image-url("./gbhiera.png");
-    preferred-width: 800px;
-    preferred-height: 600px;
+    preferred-width: 960px;
+    preferred-height: 720px;
 
     in-out property <string> status: "Gbhiera";
     in-out property <string> binary-path <=> le_binary.text;
@@ -44,7 +44,7 @@ export component GbhieraUI inherits Window {
         Row {
             hexview := HexView {
                 font-family: "Courier New";
-                font-size: 12pt;
+                font-size: 14pt;
                 horizontal_stretch: 0.8;
             }
             VerticalLayout {

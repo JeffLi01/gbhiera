@@ -19,7 +19,13 @@ pub fn setup(ui: &GbhieraUI, bhiera: Arc<RwLock<Bhiera>>) {
             }
         }
     });
-    ui.on_render_plot(render_plot);
+    let instance = bhiera.clone();
+    ui.on_render_plot({
+        move |start_line, line_count, img_height| {
+            let bytes = instance.read().unwrap().get_bytes(start_line as usize * 16, line_count as usize * 16);
+            render_plot(start_line, img_height, bytes)
+        }
+    });
 }
 
 fn load_data_provider(handle: slint::Weak<GbhieraUI>) -> Option<FileDataProvider> {
