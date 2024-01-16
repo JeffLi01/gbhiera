@@ -9,7 +9,6 @@ pub struct PlotStyle {
 
 pub struct PlotConfig<'a> {
     pub width: u32,
-    height: u32,
     char_width: u32,
     pub char_height: u32,
     hex_width: u32,
@@ -22,7 +21,7 @@ pub struct PlotConfig<'a> {
     style: TextStyle<'a>,
 }
 
-pub fn setup(img_height: u32) -> PlotConfig<'static> {
+pub fn setup() -> PlotConfig<'static> {
     let mut buf: Vec<_> = vec![0; 3];
     let backend = BitMapBackend::with_buffer(&mut buf, (1, 1));
     let style = TextStyle::from(("Courier New", 18).into_font()).color(&BLACK);
@@ -37,7 +36,6 @@ pub fn setup(img_height: u32) -> PlotConfig<'static> {
 
     PlotConfig {
         width: img_width,
-        height: img_height,
         char_width,
         char_height,
         hex_width,
@@ -103,10 +101,10 @@ fn do_plot(config: &PlotConfig, start_line: usize, bytes: Vec<u8>, pixel_buffer:
     Ok(())
 }
 
-pub fn render_plot(config: PlotConfig, start_line: i32, img_height: i32, bytes: Vec<u8>) -> slint::Image {
+pub fn render_plot(config: &PlotConfig, start_line: i32, img_height: i32, bytes: Vec<u8>) -> slint::Image {
     println!("render_plot");
-    let mut pixel_buffer = SharedPixelBuffer::new(config.width, config.height);
-    pre_do_plot(&config, &mut pixel_buffer);
-    do_plot(&config, start_line as usize, bytes, &mut pixel_buffer).unwrap();
+    let mut pixel_buffer = SharedPixelBuffer::new(config.width, img_height as u32);
+    pre_do_plot(config, &mut pixel_buffer);
+    do_plot(config, start_line as usize, bytes, &mut pixel_buffer).unwrap();
     slint::Image::from_rgb8(pixel_buffer)
 }

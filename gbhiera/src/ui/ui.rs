@@ -22,11 +22,11 @@ pub fn setup(ui: &GbhieraUI, bhiera: Arc<RwLock<Bhiera>>) {
     let instance = bhiera.clone();
     ui.on_render_plot({
         move |view_start, view_height| {
-            let config = hexview::setup(view_height as u32);
+            let config = hexview::setup();
             let start_line = (view_start + config.char_height as i32 - 1) / config.char_height as i32;
             let line_count = view_height as u32 / config.char_height;
             let bytes = instance.read().unwrap().get_bytes(start_line as usize * 16, line_count as usize * 16);
-            hexview::render_plot(config, start_line, view_height, bytes)
+            hexview::render_plot(&config, start_line, view_height, bytes)
         }
     });
 }
@@ -63,7 +63,7 @@ fn load_data_provider(handle: slint::Weak<GbhieraUI>) -> Option<FileDataProvider
 }
 
 fn apply_data_provider(handle: slint::Weak<GbhieraUI>, binary_data: &FileDataProvider) {
-    let config = hexview::setup(1000);
+    let config = hexview::setup();
     let hexview_width = config.width;
     let total_line_count = (binary_data.len() + 15) / 16;
     let hexview_height = config.char_height * total_line_count as u32;
