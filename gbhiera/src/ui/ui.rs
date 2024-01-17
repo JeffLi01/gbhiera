@@ -1,6 +1,6 @@
 use std::sync::{Arc, RwLock};
 
-use bhiera::{Bhiera, DataProvider, FileDataProvider, View};
+use bhiera::{Bhiera, DataProvider, FileDataProvider, Model};
 use rfd;
 use slint::ComponentHandle;
 
@@ -27,11 +27,10 @@ pub fn setup(ui: &GbhieraUI, bhiera: Arc<RwLock<Bhiera>>) {
         move |view_start, view_height| {
             let start_line = (view_start + config.char_height as i32 - 1) / config.char_height as i32;
             let line_count = view_height as u32 / config.char_height;
-            let bytes = instance.read().unwrap().get_bytes(start_line as usize * 16, line_count as usize * 16);
-            if bytes.is_empty() {
-                slint::Image::default()
-            } else {
-                hexview::render_plot(&config, start_line, view_height, bytes)
+            let view = instance.read().unwrap().get_view(start_line as usize * 16, line_count as usize * 16);
+            match view {
+                Some(view) => hexview::render_plot(&config, start_line, view_height, view),
+                None => slint::Image::default(),
             }
         }
     });

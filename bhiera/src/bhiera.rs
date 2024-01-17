@@ -12,20 +12,24 @@ impl Bhiera {
     }
 }
 
-pub trait View {
-    fn set_data_provider(&mut self, provider: impl DataProvider + 'static);
-    fn get_bytes(&self, offset: usize, count: usize) -> Vec<u8>;
+pub struct View {
+    pub bytes: Vec<u8>,
 }
 
-impl View for Bhiera {
+pub trait Model {
+    fn set_data_provider(&mut self, provider: impl DataProvider + 'static);
+    fn get_view(&self, offset: usize, count: usize) -> Option<View>;
+}
+
+impl Model for Bhiera {
     fn set_data_provider(&mut self, provider: impl DataProvider + 'static) {
         self.data_provider.replace(Box::new(provider));
     }
-    fn get_bytes(&self, offset: usize, count: usize) -> Vec<u8> {
+    fn get_view(&self, offset: usize, count: usize) -> Option<View> {
         if let Some(binary_data) = &self.data_provider {
             let bytes = (*binary_data).get(offset, count);
-            return bytes;
+            return Some(View { bytes });
         }
-        vec![]
+        None
     }
 }

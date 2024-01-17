@@ -2,6 +2,8 @@ use plotters::{prelude::*, style::full_palette::{GREY_100, GREY_300, GREY_600, G
 use rgb::RGB;
 use slint::SharedPixelBuffer;
 
+use bhiera::View;
+
 #[derive(Clone)]
 pub struct PlotStyle {
     bg: RGBColor,
@@ -66,7 +68,8 @@ fn pre_do_plot(config: &PlotConfig, pixel_buffer: &mut SharedPixelBuffer<RGB<u8>
     drop(backend);
 }
 
-fn do_plot(config: &PlotConfig, start_line: usize, bytes: Vec<u8>, pixel_buffer: &mut SharedPixelBuffer<RGB<u8>>) {
+fn do_plot(config: &PlotConfig, start_line: usize, view: View, pixel_buffer: &mut SharedPixelBuffer<RGB<u8>>) {
+    let bytes = &view.bytes;
     let size = (pixel_buffer.width(), pixel_buffer.height());
     let mut backend = BitMapBackend::with_buffer(pixel_buffer.make_mut_bytes(), size);
 
@@ -107,9 +110,9 @@ fn do_plot(config: &PlotConfig, start_line: usize, bytes: Vec<u8>, pixel_buffer:
     drop(backend);
 }
 
-pub fn render_plot(config: &PlotConfig, start_line: i32, img_height: i32, bytes: Vec<u8>) -> slint::Image {
+pub fn render_plot(config: &PlotConfig, start_line: i32, img_height: i32, view: View) -> slint::Image {
     let mut pixel_buffer = SharedPixelBuffer::new(config.width, img_height as u32);
     pre_do_plot(config, &mut pixel_buffer);
-    do_plot(config, start_line as usize, bytes, &mut pixel_buffer);
+    do_plot(config, start_line as usize, view, &mut pixel_buffer);
     slint::Image::from_rgb8(pixel_buffer)
 }
