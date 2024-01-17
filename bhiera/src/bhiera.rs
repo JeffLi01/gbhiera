@@ -13,7 +13,17 @@ impl Bhiera {
 }
 
 pub struct View<'a> {
-    pub bytes: &'a [u8],
+    bytes: &'a [u8],
+}
+
+impl View<'_> {
+    pub fn size(&self) -> usize {
+        self.bytes.len()
+    }
+
+    pub fn byte(&self, index: usize) -> u8 {
+        self.bytes[index]
+    }
 }
 
 pub trait Model {

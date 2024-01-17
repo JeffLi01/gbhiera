@@ -69,11 +69,10 @@ fn pre_do_plot(config: &PlotConfig, pixel_buffer: &mut SharedPixelBuffer<RGB<u8>
 }
 
 fn do_plot(config: &PlotConfig, start_line: usize, view: View, pixel_buffer: &mut SharedPixelBuffer<RGB<u8>>) {
-    let bytes = &view.bytes;
     let size = (pixel_buffer.width(), pixel_buffer.height());
     let mut backend = BitMapBackend::with_buffer(pixel_buffer.make_mut_bytes(), size);
 
-    let line_count = (bytes.len() + 15) / 16;
+    let line_count = (view.size() + 15) / 16;
     let style = config.style.color(&config.offset_view.fg);
     for line in 0..(line_count) {
         let offset = format!("{:08X}", (start_line + line) << 4);
@@ -81,9 +80,9 @@ fn do_plot(config: &PlotConfig, start_line: usize, view: View, pixel_buffer: &mu
     }
 
     let style = style.color(&config.hex_view.fg);
-    for (i, byte) in bytes.iter().enumerate() {
+    for i in 0..view.size() {
         let line = i / 16;
-        let byte_hex = format!("{:02X}", byte);
+        let byte_hex = format!("{:02X}", view.byte(i));
         let index = i % 16;
         let x = if index < 8 {
             config.offset_width + config.char_width + (config.char_width + config.hex_width) * index as u32
@@ -94,10 +93,10 @@ fn do_plot(config: &PlotConfig, start_line: usize, view: View, pixel_buffer: &mu
     }
 
     let style = style.color(&config.char_view.fg);
-    for (i, byte) in bytes.iter().enumerate() {
+    for i in 0..view.size() {
         let line = i / 16;
         let byte_char = {
-            let c = match char::from_u32(*byte as u32) {
+            let c = match char::from_u32(view.byte(i) as u32) {
                 Some(c) => if c.is_ascii_graphic() { c } else { '.' },
                 None => '.',
             };
