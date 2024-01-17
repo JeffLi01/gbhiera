@@ -12,8 +12,8 @@ impl Bhiera {
     }
 }
 
-pub struct View {
-    pub bytes: Vec<u8>,
+pub struct View<'a> {
+    pub bytes: &'a [u8],
 }
 
 pub trait Model {
@@ -28,7 +28,7 @@ impl Model for Bhiera {
     fn get_view(&self, offset: usize, count: usize) -> Option<View> {
         if let Some(binary_data) = &self.data_provider {
             let bytes = (*binary_data).get(offset, count);
-            return Some(View { bytes });
+            return bytes.map(|bytes| View {bytes});
         }
         None
     }

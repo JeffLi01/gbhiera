@@ -32,9 +32,9 @@ impl DataProvider for FileDataProvider {
         self.bytes.len()
     }
 
-    fn get(&self, offset: usize, count: usize) -> Vec<u8> {
+    fn get(&self, offset: usize, count: usize) -> Option<&[u8]> {
         if offset >= self.len() {
-            return Vec::new();
+            return None;
         }
 
         let mut end = offset + count;
@@ -42,8 +42,8 @@ impl DataProvider for FileDataProvider {
             end = self.len();
         }
         match self.bytes.get(offset..end) {
-            Some(bytes) => bytes.to_owned(),
-            None => Vec::new(),
+            Some(bytes) => Some(bytes),
+            None => None,
         }
     }
 }
