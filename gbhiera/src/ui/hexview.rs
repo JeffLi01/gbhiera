@@ -10,13 +10,14 @@ pub struct PlotStyle {
     fg: RGBColor,
 }
 
+#[allow(dead_code)]
 #[derive(Clone)]
 pub struct PlotConfig<'a> {
     pub width: u32,
     char_width: u32,
     pub char_height: u32,
-    hex_width: u32,
-    offset_width: u32,
+    hex_byte_width: u32,
+    offset_view_width: u32,
     hex_view_width: u32,
     char_view_width: u32,
     offset_view: PlotStyle,
@@ -32,19 +33,21 @@ impl<'a> PlotConfig<'a> {
         let style = TextStyle::from((typeface, size).into_font()).color(&BLACK);
         let (char_width, char_height): (u32, u32) = backend.estimate_text_size("C", &style).unwrap();
         let (hex_width, _): (u32, u32) = backend.estimate_text_size("HH", &style).unwrap();
-        let (offset_width, _): (u32, u32) = backend.estimate_text_size("00000000", &style).unwrap();
-        // println!("offset_width: {}, hex_width: {}, char_width: {}", offset_width, hex_width, char_width);
+        let (offset_view_width, _): (u32, u32) = backend.estimate_text_size("00000000 ", &style).unwrap();
         drop(backend);
-        let hex_view_width = char_width * 16 + hex_width * 16 + char_width * 3;
+        let hex_view_width = (char_width + hex_width) * 16 + char_width * 2;
         let char_view_width = char_width * 16;
-        let img_width = offset_width + hex_view_width + char_view_width + char_width;
+        let img_width = {
+            let right_margin = char_width;
+            offset_view_width + hex_view_width + char_view_width + right_margin
+        };
 
         Self {
             width: img_width,
             char_width,
             char_height,
-            hex_width,
-            offset_width,
+            hex_byte_width: hex_width,
+            offset_view_width,
             hex_view_width,
             char_view_width,
             offset_view: PlotStyle { bg: GREY_300, fg: GREY_600 },
@@ -61,8 +64,7 @@ fn pre_do_plot(config: &PlotConfig, pixel_buffer: &mut SharedPixelBuffer<RGB<u8>
     let (width, height) = backend.get_size();
 
     backend.draw_rect((0, 0), (width as i32, height as i32), &config.hex_view.bg, true).unwrap();
-    backend.draw_rect((0, 0), (config.offset_width as i32, height as i32), &config.offset_view.bg, true).unwrap();
-    backend.draw_rect(((config.offset_width + config.hex_view_width) as i32, 0), ((config.offset_width + config.hex_view_width + config.char_view_width) as i32, height as i32), &config.char_view.bg, true).unwrap();
+    backend.draw_rect((0, 0), (config.offset_view_width as i32, height as i32), &config.offset_view.bg, true).unwrap();
 
     backend.present().unwrap();
     drop(backend);
@@ -84,9 +86,9 @@ fn do_plot(config: &PlotConfig, view: View, pixel_buffer: &mut SharedPixelBuffer
         let byte_hex = format!("{:02X}", view.byte(i));
         let index = i % 16;
         let x = if index < 8 {
-            config.offset_width + config.char_width + (config.char_width + config.hex_width) * index as u32
+            config.offset_view_width + (config.char_width + config.hex_byte_width) * index as u32
         } else {
-            config.offset_width + config.char_width * 2 + (config.char_width + config.hex_width) * index as u32
+            config.offset_view_width + config.char_width + (config.char_width + config.hex_byte_width) * index as u32
         } as i32;
         backend.draw_text(&byte_hex, &style, (x, (line as u32 * config.char_height) as i32)).unwrap();
     }
@@ -101,7 +103,7 @@ fn do_plot(config: &PlotConfig, view: View, pixel_buffer: &mut SharedPixelBuffer
             };
             format!("{}", c)
         };
-        backend.draw_text(&byte_char, &style, ((config.offset_width + config.hex_view_width + (i as u32 % 16) * config.char_width) as i32, (line as u32 * config.char_height) as i32)).unwrap();
+        backend.draw_text(&byte_char, &style, ((config.offset_view_width + config.hex_view_width + (i as u32 % 16) * config.char_width) as i32, (line as u32 * config.char_height) as i32)).unwrap();
     }
 
     backend.present().unwrap();
