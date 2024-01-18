@@ -34,7 +34,6 @@ impl<'a> PlotConfig<'a> {
         let (char_width, char_height): (u32, u32) = backend.estimate_text_size("C", &style).unwrap();
         let (hex_width, _): (u32, u32) = backend.estimate_text_size("HH", &style).unwrap();
         let (offset_view_width, _): (u32, u32) = backend.estimate_text_size("00000000 ", &style).unwrap();
-        drop(backend);
         let hex_view_width = (char_width + hex_width) * 16 + char_width * 2;
         let char_view_width = char_width * 16;
         let img_width = {
@@ -58,21 +57,13 @@ impl<'a> PlotConfig<'a> {
     }
 }
 
-fn pre_do_plot(config: &PlotConfig, pixel_buffer: &mut SharedPixelBuffer<RGB<u8>>) {
+fn do_plot(config: &PlotConfig, view: View, pixel_buffer: &mut SharedPixelBuffer<RGB<u8>>) {
     let size = (pixel_buffer.width(), pixel_buffer.height());
     let mut backend = BitMapBackend::with_buffer(pixel_buffer.make_mut_bytes(), size);
     let (width, height) = backend.get_size();
 
     backend.draw_rect((0, 0), (width as i32, height as i32), &config.hex_view.bg, true).unwrap();
     backend.draw_rect((0, 0), (config.offset_view_width as i32, height as i32), &config.offset_view.bg, true).unwrap();
-
-    backend.present().unwrap();
-    drop(backend);
-}
-
-fn do_plot(config: &PlotConfig, view: View, pixel_buffer: &mut SharedPixelBuffer<RGB<u8>>) {
-    let size = (pixel_buffer.width(), pixel_buffer.height());
-    let mut backend = BitMapBackend::with_buffer(pixel_buffer.make_mut_bytes(), size);
 
     let style = config.style.color(&config.offset_view.fg);
     for (line, line_offset) in (0..view.size()).step_by(16).enumerate() {
@@ -85,12 +76,12 @@ fn do_plot(config: &PlotConfig, view: View, pixel_buffer: &mut SharedPixelBuffer
         let line = i / 16;
         let byte_hex = format!("{:02X}", view.byte(i));
         let index = i % 16;
-        let x = if index < 8 {
-            config.offset_view_width + (config.char_width + config.hex_byte_width) * index as u32
-        } else {
-            config.offset_view_width + config.char_width + (config.char_width + config.hex_byte_width) * index as u32
-        } as i32;
-        backend.draw_text(&byte_hex, &style, (x, (line as u32 * config.char_height) as i32)).unwrap();
+        let mut x = config.offset_view_width + (config.char_width + config.hex_byte_width) * index as u32;
+        if index >= 8 {
+            x += config.char_width;
+        }
+        let y = line as u32 * config.char_height;
+        backend.draw_text(&byte_hex, &style, (x as i32, y as i32)).unwrap();
     }
 
     let style = style.color(&config.char_view.fg);
@@ -103,16 +94,16 @@ fn do_plot(config: &PlotConfig, view: View, pixel_buffer: &mut SharedPixelBuffer
             };
             format!("{}", c)
         };
-        backend.draw_text(&byte_char, &style, ((config.offset_view_width + config.hex_view_width + (i as u32 % 16) * config.char_width) as i32, (line as u32 * config.char_height) as i32)).unwrap();
+        let x = config.offset_view_width + config.hex_view_width + (i as u32 % 16) * config.char_width;
+        let y = line as u32 * config.char_height;
+        backend.draw_text(&byte_char, &style, (x as i32, y as i32)).unwrap();
     }
 
     backend.present().unwrap();
-    drop(backend);
 }
 
 pub fn render_plot(config: &PlotConfig, img_height: i32, view: View) -> slint::Image {
     let mut pixel_buffer = SharedPixelBuffer::new(config.width, img_height as u32);
-    pre_do_plot(config, &mut pixel_buffer);
     do_plot(config, view, &mut pixel_buffer);
     slint::Image::from_rgb8(pixel_buffer)
 }
