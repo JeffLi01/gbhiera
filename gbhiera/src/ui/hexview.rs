@@ -68,14 +68,13 @@ fn pre_do_plot(config: &PlotConfig, pixel_buffer: &mut SharedPixelBuffer<RGB<u8>
     drop(backend);
 }
 
-fn do_plot(config: &PlotConfig, start_line: usize, view: View, pixel_buffer: &mut SharedPixelBuffer<RGB<u8>>) {
+fn do_plot(config: &PlotConfig, view: View, pixel_buffer: &mut SharedPixelBuffer<RGB<u8>>) {
     let size = (pixel_buffer.width(), pixel_buffer.height());
     let mut backend = BitMapBackend::with_buffer(pixel_buffer.make_mut_bytes(), size);
 
-    let line_count = (view.size() + 15) / 16;
     let style = config.style.color(&config.offset_view.fg);
-    for line in 0..(line_count) {
-        let offset = format!("{:08X}", (start_line + line) << 4);
+    for (line, line_offset) in (0..view.size()).step_by(16).enumerate() {
+        let offset = format!("{:08X}", line_offset);
         backend.draw_text(&offset, &style, (0, (line * config.char_height as usize) as i32)).unwrap();
     }
 
@@ -109,9 +108,9 @@ fn do_plot(config: &PlotConfig, start_line: usize, view: View, pixel_buffer: &mu
     drop(backend);
 }
 
-pub fn render_plot(config: &PlotConfig, start_line: i32, img_height: i32, view: View) -> slint::Image {
+pub fn render_plot(config: &PlotConfig, img_height: i32, view: View) -> slint::Image {
     let mut pixel_buffer = SharedPixelBuffer::new(config.width, img_height as u32);
     pre_do_plot(config, &mut pixel_buffer);
-    do_plot(config, start_line as usize, view, &mut pixel_buffer);
+    do_plot(config, view, &mut pixel_buffer);
     slint::Image::from_rgb8(pixel_buffer)
 }

@@ -30,7 +30,7 @@ pub fn setup(ui: &GbhieraUI, bhiera: Arc<RwLock<Bhiera>>) {
             let bhiera = instance.read().unwrap();
             let view = bhiera.get_view(start_line as usize * 16, line_count as usize * 16);
             match view {
-                Some(view) => hexview::render_plot(&config, start_line, view_height, view),
+                Some(view) => hexview::render_plot(&config, view_height, view),
                 None => slint::Image::default(),
             }
         }
