@@ -27,7 +27,7 @@ pub struct PlotConfig<'a> {
 }
 
 impl<'a> PlotConfig<'a> {
-    pub fn new(typeface: &'a str, size: f64) -> Self {
+    pub fn with_font(typeface: &'a str, size: f64) -> Self {
         let mut buf: Vec<_> = vec![0; 3];
         let backend = BitMapBackend::with_buffer(&mut buf, (1, 1));
         let style = TextStyle::from((typeface, size).into_font()).color(&BLACK);

@@ -8,7 +8,7 @@ use crate::GbhieraUI;
 use super::hexview::{self, PlotConfig};
 
 pub fn setup(ui: &GbhieraUI, bhiera: Arc<RwLock<Bhiera>>) {
-    let plot_config = PlotConfig::new("Courier New", 18.0);
+    let plot_config = PlotConfig::with_font("Courier New", 18.0);
     let handle_weak = ui.as_weak();
     let instance = bhiera.clone();
     let config = plot_config.clone();
