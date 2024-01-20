@@ -99,37 +99,62 @@ impl Model for Bhiera {
 
     fn get_view(&self, view_start: u32, view_height: u32) -> Option<View> {
         if let Some(binary_data) = &self.data_provider {
-            let start_line = (view_start + self.plot_config.char_height - 1) / self.plot_config.char_height;
+            let start_line =
+                (view_start + self.plot_config.char_height - 1) / self.plot_config.char_height;
             let line_count = view_height as u32 / self.plot_config.char_height;
             let offset = start_line as usize * 16;
             let bytes = (*binary_data).get(offset, line_count as usize * 16);
             let mut elements = VecDeque::new();
             match bytes {
                 Some(bytes) => {
-                    let element = Element::Rectangle(RectangleElement { x: 0, y: 0, width: self.plot_config.width() as i32, height: view_height as i32, bg: (255, 255, 255) });
+                    let element = Element::Rectangle(RectangleElement {
+                        x: 0,
+                        y: 0,
+                        width: self.plot_config.width() as i32,
+                        height: view_height as i32,
+                        bg: (255, 255, 255),
+                    });
                     elements.push_back(element);
-                    
-                    let element = Element::Rectangle(RectangleElement { x: 0, y: 0, width: self.plot_config.offset_view_width as i32, height: view_height as i32, bg: (224, 224, 224) });
+
+                    let element = Element::Rectangle(RectangleElement {
+                        x: 0,
+                        y: 0,
+                        width: self.plot_config.offset_view_width as i32,
+                        height: view_height as i32,
+                        bg: (224, 224, 224),
+                    });
                     elements.push_back(element);
 
                     for (line, line_offset) in (0..bytes.len()).step_by(16).enumerate() {
                         let text = format!("{:08X}", line_offset);
                         let y = line * self.plot_config.char_height as usize;
-                        let element = Element::Byte(TextElement { text, x: 0, y: y as i32, fg: (117, 117, 117) });
+                        let element = Element::Byte(TextElement {
+                            text,
+                            x: 0,
+                            y: y as i32,
+                            fg: (117, 117, 117),
+                        });
                         elements.push_back(element);
                     }
-    
+
                     for (i, byte) in bytes.iter().enumerate() {
                         let line = i / 16;
                         let index = i % 16;
                         let text = format!("{:02X}", byte);
-                        let mut x = self.plot_config.offset_view_width + (self.plot_config.char_width + self.plot_config.hex_byte_width) * index as u32;
+                        let mut x = self.plot_config.offset_view_width
+                            + (self.plot_config.char_width + self.plot_config.hex_byte_width)
+                                * index as u32;
                         if index >= 8 {
                             x += self.plot_config.char_width;
                         }
                         let y = line as u32 * self.plot_config.char_height;
 
-                        let element = Element::Byte(TextElement { text, x: x as i32, y: y as i32, fg: (0, 0, 0) });
+                        let element = Element::Byte(TextElement {
+                            text,
+                            x: x as i32,
+                            y: y as i32,
+                            fg: (0, 0, 0),
+                        });
                         elements.push_back(element);
                     }
 
@@ -138,25 +163,38 @@ impl Model for Bhiera {
                         let index = i % 16;
                         let text = {
                             let c = match char::from_u32(*byte as u32) {
-                                Some(c) => if c.is_ascii_graphic() { c } else { '.' },
+                                Some(c) => {
+                                    if c.is_ascii_graphic() {
+                                        c
+                                    } else {
+                                        '.'
+                                    }
+                                }
                                 None => '.',
                             };
                             format!("{}", c)
                         };
-                        let x = self.plot_config.offset_view_width + self.plot_config.hex_view_width() + index as u32 * self.plot_config.char_width;
+                        let x = self.plot_config.offset_view_width
+                            + self.plot_config.hex_view_width()
+                            + index as u32 * self.plot_config.char_width;
                         let y = line as u32 * self.plot_config.char_height;
 
-                        let element = Element::Byte(TextElement { text, x: x as i32, y: y as i32, fg: (0, 0, 0) });
+                        let element = Element::Byte(TextElement {
+                            text,
+                            x: x as i32,
+                            y: y as i32,
+                            fg: (0, 0, 0),
+                        });
                         elements.push_back(element);
                     }
-                },
+                }
                 None => todo!(),
             };
             return Some(View {
-                    offset,
-                    elements,
-                    ..Default::default()
-                });
+                offset,
+                elements,
+                ..Default::default()
+            });
         }
         None
     }

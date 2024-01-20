@@ -4,8 +4,8 @@ use bhiera::{Bhiera, FileDataProvider, Model};
 use rfd;
 use slint::ComponentHandle;
 
-use crate::GbhieraUI;
 use super::Plotter;
+use crate::GbhieraUI;
 
 pub fn setup(ui: &GbhieraUI, bhiera: Arc<RwLock<Bhiera>>) {
     let orig_plotter = Plotter::with_font("Courier New", 18.0);
