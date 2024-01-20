@@ -8,10 +8,11 @@ use crate::GbhieraUI;
 use super::Plotter;
 
 pub fn setup(ui: &GbhieraUI, bhiera: Arc<RwLock<Bhiera>>) {
-    let plot_config = Plotter::with_font("Courier New", 18.0);
+    let orig_plotter = Plotter::with_font("Courier New", 18.0);
+    bhiera.write().unwrap().set_geometry(&orig_plotter.config);
     let handle_weak = ui.as_weak();
     let instance = bhiera.clone();
-    let plotter = plot_config.clone();
+    let plotter = orig_plotter.clone();
     ui.on_show_open_dialog({
         move || {
             let data_provider = load_data_provider(handle_weak.clone());
@@ -29,7 +30,7 @@ pub fn setup(ui: &GbhieraUI, bhiera: Arc<RwLock<Bhiera>>) {
         }
     });
     let instance = bhiera.clone();
-    let plotter = plot_config.clone();
+    let plotter = orig_plotter.clone();
     ui.on_render_plot({
         move |view_start, view_height| {
             let bhiera = instance.read().unwrap();
