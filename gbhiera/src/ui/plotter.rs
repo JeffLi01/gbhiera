@@ -1,32 +1,23 @@
-use plotters::{prelude::*, style::full_palette::{GREY_100, GREY_300, GREY_600, GREY_800}};
+use plotters::prelude::*;
 use slint::SharedPixelBuffer;
 
 use bhiera::{DataProvider, Bhiera, Element, Model, BhieraGeometry};
-
-#[derive(Clone)]
-struct PlotStyle {
-    bg: RGBColor,
-    fg: RGBColor,
-}
 
 #[allow(dead_code)]
 #[derive(Clone)]
 pub struct Plotter<'a> {
     pub config: BhieraGeometry,
-    offset_view: PlotStyle,
-    hex_view: PlotStyle,
-    char_view: PlotStyle,
-    style: TextStyle<'a>,
+    text_style: TextStyle<'a>,
 }
 
 impl<'a> Plotter<'a> {
     pub fn with_font(typeface: &'a str, size: f64) -> Self {
         let mut buf: Vec<_> = vec![0; 3];
         let backend = BitMapBackend::with_buffer(&mut buf, (1, 1));
-        let style = TextStyle::from((typeface, size).into_font()).color(&BLACK);
-        let (char_width, char_height): (u32, u32) = backend.estimate_text_size("C", &style).unwrap();
-        let (hex_byte_width, _): (u32, u32) = backend.estimate_text_size("HH", &style).unwrap();
-        let (offset_view_width, _): (u32, u32) = backend.estimate_text_size("00000000 ", &style).unwrap();
+        let text_style = TextStyle::from((typeface, size).into_font()).color(&BLACK);
+        let (char_width, char_height): (u32, u32) = backend.estimate_text_size("C", &text_style).unwrap();
+        let (hex_byte_width, _): (u32, u32) = backend.estimate_text_size("HH", &text_style).unwrap();
+        let (offset_view_width, _): (u32, u32) = backend.estimate_text_size("00000000 ", &text_style).unwrap();
 
         Self {
             config: BhieraGeometry {
@@ -35,10 +26,7 @@ impl<'a> Plotter<'a> {
                 hex_byte_width,
                 offset_view_width,
             },
-            offset_view: PlotStyle { bg: GREY_300, fg: GREY_600 },
-            hex_view: PlotStyle { bg: WHITE, fg: BLACK },
-            char_view: PlotStyle { bg: GREY_100, fg: GREY_800 },
-            style,
+            text_style,
         }
     }
 
@@ -55,44 +43,21 @@ impl<'a> Plotter<'a> {
                 let mut pixel_buffer = SharedPixelBuffer::new(self.config.width(), view_height as u32);
                 let size = (pixel_buffer.width(), pixel_buffer.height());
                 let mut backend = BitMapBackend::with_buffer(pixel_buffer.make_mut_bytes(), size);
-                let (width, height) = backend.get_size();
 
-                backend.draw_rect((0, 0), (width as i32, height as i32), &self.hex_view.bg, true).unwrap();
-                backend.draw_rect((0, 0), (self.config.offset_view_width as i32, height as i32), &self.offset_view.bg, true).unwrap();
-
-                let offset_style = self.style.color(&self.offset_view.fg);
-                let hex_style = self.style.color(&self.hex_view.fg);
-                let char_style = self.style.color(&self.char_view.fg);
-
-                for (line, line_offset) in (0..view.size()).step_by(16).enumerate() {
-                    let offset = format!("{:08X}", line_offset);
-                    backend.draw_text(&offset, &offset_style, (0, (line * self.config.char_height as usize) as i32)).unwrap();
-                }
-
-                for (i, element) in view.enumerate() {
+                let mut style;
+                let mut bg_color;
+                let mut fg_color;
+                for element in view {
                     match element {
-                        Element::Byte(byte) => {
-                            let line = i / 16;
-                            let index = i % 16;
-                            let byte_hex = format!("{:02X}", byte.byte);
-                            let mut x = self.config.offset_view_width + (self.config.char_width + self.config.hex_byte_width) * index as u32;
-                            if index >= 8 {
-                                x += self.config.char_width;
-                            }
-                            let y = line as u32 * self.config.char_height;
-                            backend.draw_text(&byte_hex, &hex_style, (x as i32, y as i32)).unwrap();
-
-                            let byte_char = {
-                                let c = match char::from_u32(byte.byte as u32) {
-                                    Some(c) => if c.is_ascii_graphic() { c } else { '.' },
-                                    None => '.',
-                                };
-                                format!("{}", c)
-                            };
-                            let x = self.config.offset_view_width + self.config.hex_view_width() + index as u32 * self.config.char_width;
-                            let y = line as u32 * self.config.char_height;
-                            backend.draw_text(&byte_char, &char_style, (x as i32, y as i32)).unwrap();
+                        Element::Byte(text) => {
+                            fg_color = RGBColor(text.fg.0, text.fg.1, text.fg.2);
+                            style = self.text_style.color(&fg_color);
+                            backend.draw_text(&text.text, &style, (text.x, text.y)).unwrap();
                         }
+                        Element::Rectangle(rectangle) => {
+                            bg_color = RGBColor(rectangle.bg.0, rectangle.bg.1, rectangle.bg.2);
+                            backend.draw_rect((rectangle.x, rectangle.y), (rectangle.width, rectangle.height), &bg_color, true).unwrap();
+                        },
                     };
                 }
 

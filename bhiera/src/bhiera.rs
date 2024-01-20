@@ -1,3 +1,5 @@
+use std::collections::VecDeque;
+
 use crate::DataProvider;
 
 #[derive(Clone, Copy, Default)]
@@ -43,41 +45,46 @@ impl Bhiera {
 }
 
 #[derive(Default)]
-pub struct View<'a> {
+pub struct View {
     offset: usize,
-    bytes: &'a [u8],
-    current: usize,
+    elements: VecDeque<Element>,
 }
 
-impl View<'_> {
+impl View {
     pub fn offset(&self) -> usize {
         self.offset
     }
 
     pub fn size(&self) -> usize {
-        self.bytes.len()
+        self.elements.len()
     }
 }
 
-impl Iterator for View<'_> {
+impl Iterator for View {
     type Item = Element;
     fn next(&mut self) -> Option<Self::Item> {
-        if self.current >= self.bytes.len() {
-            return None;
-        }
-        let element = Element::Byte(TextElement { byte: self.bytes[self.current] });
-        let result = Some(element);
-        self.current += 1;
-        result
+        self.elements.pop_front()
     }
 }
 
 pub struct TextElement {
-    pub byte: u8,
+    pub text: String,
+    pub x: i32,
+    pub y: i32,
+    pub fg: (u8, u8, u8),
+}
+
+pub struct RectangleElement {
+    pub x: i32,
+    pub y: i32,
+    pub width: i32,
+    pub height: i32,
+    pub bg: (u8, u8, u8),
 }
 
 pub enum Element {
     Byte(TextElement),
+    Rectangle(RectangleElement),
 }
 
 pub trait Model {
@@ -96,10 +103,58 @@ impl Model for Bhiera {
             let line_count = view_height as u32 / self.plot_config.char_height;
             let offset = start_line as usize * 16;
             let bytes = (*binary_data).get(offset, line_count as usize * 16);
-            return bytes.map(|bytes|
-                View {
+            let mut elements = VecDeque::new();
+            match bytes {
+                Some(bytes) => {
+                    let element = Element::Rectangle(RectangleElement { x: 0, y: 0, width: self.plot_config.width() as i32, height: view_height as i32, bg: (255, 255, 255) });
+                    elements.push_back(element);
+                    
+                    let element = Element::Rectangle(RectangleElement { x: 0, y: 0, width: self.plot_config.offset_view_width as i32, height: view_height as i32, bg: (224, 224, 224) });
+                    elements.push_back(element);
+
+                    for (line, line_offset) in (0..bytes.len()).step_by(16).enumerate() {
+                        let text = format!("{:08X}", line_offset);
+                        let y = line * self.plot_config.char_height as usize;
+                        let element = Element::Byte(TextElement { text, x: 0, y: y as i32, fg: (117, 117, 117) });
+                        elements.push_back(element);
+                    }
+    
+                    for (i, byte) in bytes.iter().enumerate() {
+                        let line = i / 16;
+                        let index = i % 16;
+                        let text = format!("{:02X}", byte);
+                        let mut x = self.plot_config.offset_view_width + (self.plot_config.char_width + self.plot_config.hex_byte_width) * index as u32;
+                        if index >= 8 {
+                            x += self.plot_config.char_width;
+                        }
+                        let y = line as u32 * self.plot_config.char_height;
+
+                        let element = Element::Byte(TextElement { text, x: x as i32, y: y as i32, fg: (0, 0, 0) });
+                        elements.push_back(element);
+                    }
+
+                    for (i, byte) in bytes.iter().enumerate() {
+                        let line = i / 16;
+                        let index = i % 16;
+                        let text = {
+                            let c = match char::from_u32(*byte as u32) {
+                                Some(c) => if c.is_ascii_graphic() { c } else { '.' },
+                                None => '.',
+                            };
+                            format!("{}", c)
+                        };
+                        let x = self.plot_config.offset_view_width + self.plot_config.hex_view_width() + index as u32 * self.plot_config.char_width;
+                        let y = line as u32 * self.plot_config.char_height;
+
+                        let element = Element::Byte(TextElement { text, x: x as i32, y: y as i32, fg: (0, 0, 0) });
+                        elements.push_back(element);
+                    }
+                },
+                None => todo!(),
+            };
+            return Some(View {
                     offset,
-                    bytes,
+                    elements,
                     ..Default::default()
                 });
         }
