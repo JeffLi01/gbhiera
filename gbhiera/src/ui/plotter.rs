@@ -49,9 +49,7 @@ impl<'a> Plotter<'a> {
     }
 
     pub fn plot(&self, bhiera: &Bhiera, view_start: i32, view_height: i32) -> slint::Image {
-        let start_line = (view_start + self.config.char_height as i32 - 1) / self.config.char_height as i32;
-        let line_count = view_height as u32 / self.config.char_height;
-        let view = bhiera.get_view(start_line as usize * 16, line_count as usize * 16);
+        let view = bhiera.get_view(view_start as u32, view_height as u32);
         match view {
             Some(view) => {
                 let mut pixel_buffer = SharedPixelBuffer::new(self.config.width(), view_height as u32);

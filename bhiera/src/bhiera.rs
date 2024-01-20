@@ -82,16 +82,20 @@ pub enum Element {
 
 pub trait Model {
     fn set_data_provider(&mut self, provider: impl DataProvider + 'static);
-    fn get_view(&self, offset: usize, count: usize) -> Option<View>;
+    fn get_view(&self, view_start: u32, view_height: u32) -> Option<View>;
 }
 
 impl Model for Bhiera {
     fn set_data_provider(&mut self, provider: impl DataProvider + 'static) {
         self.data_provider.replace(Box::new(provider));
     }
-    fn get_view(&self, offset: usize, count: usize) -> Option<View> {
+
+    fn get_view(&self, view_start: u32, view_height: u32) -> Option<View> {
         if let Some(binary_data) = &self.data_provider {
-            let bytes = (*binary_data).get(offset, count);
+            let start_line = (view_start + self.plot_config.char_height - 1) / self.plot_config.char_height;
+            let line_count = view_height as u32 / self.plot_config.char_height;
+            let offset = start_line as usize * 16;
+            let bytes = (*binary_data).get(offset, line_count as usize * 16);
             return bytes.map(|bytes|
                 View {
                     offset,
