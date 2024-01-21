@@ -25,6 +25,8 @@ export component GbhieraUI inherits Window {
     callback reload-file(string);
     callback show-open-dialog();
     pure callback render_plot <=> hexview.render_plot;
+    pure callback update_selection_begin <=> hexview.update_selection_begin;
+    pure callback update_selection_end <=> hexview.update_selection_end;
 
     GridBox {
         Row {

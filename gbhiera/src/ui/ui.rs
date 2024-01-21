@@ -32,9 +32,24 @@ pub fn setup(ui: &GbhieraUI, bhiera: Arc<RwLock<Bhiera>>) {
     let instance = bhiera.clone();
     let plotter = orig_plotter.clone();
     ui.on_render_plot({
-        move |view_start, view_height| {
+        move |view_start, view_height, begin, end| {
+            let mut bhiera = instance.write().unwrap();
+            bhiera.set_view_y(view_start as u32);
+            drop(bhiera);
             let bhiera = instance.read().unwrap();
             plotter.plot(&bhiera, view_start, view_height)
+        }
+    });
+    let instance = bhiera.clone();
+    ui.on_update_selection_begin({
+        move |(x, y)| {
+            instance.write().unwrap().set_selection_begin(x, y);
+        }
+    });
+    let instance = bhiera.clone();
+    ui.on_update_selection_end({
+        move |(x, y)| {
+            instance.write().unwrap().set_selection_end(x, y);
         }
     });
 }

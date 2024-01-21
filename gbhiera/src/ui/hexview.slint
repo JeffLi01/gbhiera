@@ -1,28 +1,43 @@
 import { HorizontalBox, TextEdit, ListView, VerticalBox, ScrollView, Slider, GridBox} from "std-widgets.slint";
 export component HexView inherits ScrollView {
-    pure callback render_plot(int /* view_start */, int /* view_height */) -> image;
+    pure callback render_plot(int /* view_start */, int /* view_height */, {x: int, y: int}, {x: int, y: int}) -> image;
+    pure callback update_selection_begin({x: int, y: int});
+    pure callback update_selection_end({x: int, y: int});
+
+    private property <{x: int, y: int}> selection_begin: {x: 0, y: 0};
+    private property <{x: int, y: int}> selection_end: {x: 0, y: 0};
 
     hex-view := Image {
         x: 0;
         y: - root.viewport-y;
-        source: root.render_plot(self.y / 1px, root.visible-height / 1px);
-        // image-fit: contain;
+        source: root.render_plot(- root.viewport-y / 1px, root.visible-height / 1px, root.selection-begin, root.selection-end);
         touch := TouchArea {
-            property <float> pressed-pitch;
-            property <float> pressed-yaw;
+            mouse-cursor: MouseCursor.text;
             pointer-event(event) => {
                 if (event.button == PointerEventButton.left && event.kind == PointerEventKind.down) {
-                    // self.pressed-pitch = root.pitch;
-                    // self.pressed-yaw = root.yaw;
+                    if (!event.modifiers.shift) {
+                        update_selection_begin({x: touch.mouse-x / 1px, y: touch.mouse-y / 1px});
+                        root.selection-begin = {x: touch.mouse-x / 1px, y: touch.mouse-y / 1px};
+                    }
+                    update_selection_end({x: touch.mouse-x / 1px, y: touch.mouse-y / 1px});
+                    root.selection-end = {x: touch.mouse-x / 1px, y: touch.mouse-y / 1px};
                 }
             }
             moved => {
                 if (self.enabled && self.pressed) {
-                    // root.pitch = self.pressed-pitch + (touch.mouse-y - touch.pressed-y) / self.height * 3.14;
-                    // root.yaw = self.pressed-yaw - (touch.mouse-x - touch.pressed-x) / self.width * 3.14;
+                    if(touch.mouse-y < 0) {
+                        if (root.viewport-y - touch.mouse-y <= 0) {
+                            root.viewport-y += - touch.mouse-y;
+                        } else {
+                            root.viewport-y = 0;
+                        }
+                    } else if (touch.mouse-y > root.visible-height) {
+                        root.viewport-y -= (touch.mouse-y - root.visible-height);
+                    }
+                    update_selection_end({x: touch.mouse-x / 1px, y: touch.mouse-y / 1px});
+                    root.selection-end = {x: touch.mouse-x / 1px, y: touch.mouse-y / 1px};
                 }
             }
-            // mouse-cursor: self.pressed ? MouseCursor.grabbing : MouseCursor.grab;
         }
     }
 }
