@@ -1,34 +1,11 @@
 use std::collections::VecDeque;
 
-use crate::DataProvider;
-
-#[derive(Clone, Copy, Default)]
-pub struct BhieraGeometry {
-    pub char_width: u32,
-    pub char_height: u32,
-    pub hex_byte_width: u32,
-    pub offset_view_width: u32,
-}
-
-impl BhieraGeometry {
-    pub fn width(&self) -> u32 {
-        let right_margin = self.char_width;
-        self.offset_view_width + self.hex_view_width() + self.char_view_width() + right_margin
-    }
-
-    pub fn hex_view_width(&self) -> u32 {
-        (self.char_width + self.hex_byte_width) * 16 + self.char_width * 2
-    }
-
-    pub fn char_view_width(&self) -> u32 {
-        self.char_width * 16
-    }
-}
+use crate::{Geometry, DataProvider};
 
 #[derive(Default)]
 pub struct Bhiera {
     data_provider: Option<Box<dyn DataProvider>>,
-    plot_config: BhieraGeometry,
+    plot_config: Geometry,
     view_y: u32,
     selection_begin: usize,
     selection_end: usize,
@@ -42,7 +19,7 @@ impl Bhiera {
         }
     }
 
-    pub fn set_geometry(&mut self, config: &BhieraGeometry) {
+    pub fn set_geometry(&mut self, config: &Geometry) {
         self.plot_config = *config;
     }
 

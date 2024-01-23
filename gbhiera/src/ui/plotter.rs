@@ -2,12 +2,12 @@ use image::{ImageBuffer, Pixel, Rgb};
 use plotters::prelude::*;
 use slint::SharedPixelBuffer;
 
-use bhiera::{Bhiera, BhieraGeometry, DataProvider, Element, Model};
+use bhiera::{Bhiera, Geometry, DataProvider, Element, Model};
 
 #[allow(dead_code)]
 #[derive(Clone)]
 pub struct Plotter<'a> {
-    pub config: BhieraGeometry,
+    pub config: Geometry,
     text_style: TextStyle<'a>,
 }
 
@@ -25,7 +25,7 @@ impl<'a> Plotter<'a> {
             .unwrap();
 
         Self {
-            config: BhieraGeometry {
+            config: Geometry {
                 char_width,
                 char_height,
                 hex_byte_width,
