@@ -1,3 +1,10 @@
+use std::collections::VecDeque;
+
+use crate::{
+    element::{RectangleElement, TextElement},
+    Element,
+};
+
 #[derive(Clone, Copy, Default)]
 pub struct Geometry {
     pub char_width: u32,
@@ -20,7 +27,12 @@ impl Geometry {
         self.char_width * 16
     }
 
-    pub fn calc_cursor(&self, view_start: u32, view_height: u32, current_byte: usize) -> Vec<(u32, u32, u32, u32)> {
+    pub fn calc_cursor(
+        &self,
+        view_start: u32,
+        view_height: u32,
+        current_byte: usize,
+    ) -> Vec<(u32, u32, u32, u32)> {
         let view_start = view_start - view_start % self.char_height;
         let mut cursors = Vec::new();
         let cursor_width = 2;
@@ -28,17 +40,18 @@ impl Geometry {
         let line_index = current_byte / 16;
         let byte_index = current_byte % 16;
         let combo_width = self.char_width + self.hex_byte_width;
-        let x = self.offset_view_width + if byte_index < 8 {
-            byte_index as u32 * combo_width
-        } else {
-            byte_index as u32 * combo_width + self.char_width
-        };
-        let y: u32 = {
-            line_index as u32 * self.char_height
-        };
+        let x = self.offset_view_width
+            + if byte_index < 8 {
+                byte_index as u32 * combo_width
+            } else {
+                byte_index as u32 * combo_width + self.char_width
+            };
+        let y: u32 = { line_index as u32 * self.char_height };
         if y > view_start && y < view_start + view_height {
             cursors.push((x, y - view_start, cursor_width, cursor_height));
-            let x = self.offset_view_width + self.hex_view_width() + byte_index as u32 * self.char_width;
+            let x = self.offset_view_width
+                + self.hex_view_width()
+                + byte_index as u32 * self.char_width;
             cursors.push((x, y - view_start, cursor_width, cursor_height));
         }
         cursors
@@ -51,14 +64,103 @@ impl Geometry {
             x if x < self.offset_view_width => 0,
             x if x < self.offset_view_width + self.hex_view_width() - self.char_width * 2 => {
                 (x - self.offset_view_width) / combo_width
-            },
+            }
             x if x < self.offset_view_width + self.hex_view_width() - self.char_width => 15,
             x if x < self.offset_view_width + self.hex_view_width() - self.char_width / 2 => 0,
             x if x < self.width() - self.char_width => {
-                (x - self.offset_view_width - self.hex_view_width() + self.char_width / 2) / self.char_width
-            },
+                (x - self.offset_view_width - self.hex_view_width() + self.char_width / 2)
+                    / self.char_width
+            }
             _ => 15,
         };
         (line_index * 16 + byte_index) as usize
+    }
+
+    pub fn bg(&self, height: u32) -> Element {
+        Element::Rectangle(RectangleElement {
+            x: 0,
+            y: 0,
+            width: self.width() as i32,
+            height: height as i32,
+            bg: (255, 255, 255),
+        })
+    }
+
+    pub fn offset_view_bg(&self, height: u32) -> Element {
+        Element::Rectangle(RectangleElement {
+            x: 0,
+            y: 0,
+            width: self.offset_view_width as i32,
+            height: height as i32,
+            bg: (224, 224, 224),
+        })
+    }
+
+    pub fn offsets(&self, offset: usize, size: usize) -> VecDeque<Element> {
+        let mut elements = VecDeque::new();
+        for (line, line_offset) in (0..size).step_by(16).enumerate() {
+            let text = format!("{:08X}", offset + line_offset);
+            let y = line * self.char_height as usize;
+            let element = Element::Byte(TextElement {
+                text,
+                x: 0,
+                y: y as i32,
+                fg: (117, 117, 117),
+            });
+            elements.push_back(element);
+        }
+        elements
+    }
+
+    pub fn text(&self, bytes: &[u8]) -> VecDeque<Element> {
+        let mut elements = VecDeque::new();
+        for (i, byte) in bytes.iter().enumerate() {
+            let line = i / 16;
+            let index = i % 16;
+            let text = format!("{:02X}", byte);
+            let mut x =
+                self.offset_view_width + (self.char_width + self.hex_byte_width) * index as u32;
+            if index >= 8 {
+                x += self.char_width;
+            }
+            let y = line as u32 * self.char_height;
+
+            let element = Element::Byte(TextElement {
+                text,
+                x: x as i32,
+                y: y as i32,
+                fg: (0, 0, 0),
+            });
+            elements.push_back(element);
+        }
+
+        for (i, byte) in bytes.iter().enumerate() {
+            let line = i / 16;
+            let index = i % 16;
+            let text = {
+                let c = match char::from_u32(*byte as u32) {
+                    Some(c) => {
+                        if c.is_ascii_graphic() {
+                            c
+                        } else {
+                            '.'
+                        }
+                    }
+                    None => '.',
+                };
+                format!("{}", c)
+            };
+            let x = self.offset_view_width + self.hex_view_width() + index as u32 * self.char_width;
+            let y = line as u32 * self.char_height;
+
+            let element = Element::Byte(TextElement {
+                text,
+                x: x as i32,
+                y: y as i32,
+                fg: (0, 0, 0),
+            });
+            elements.push_back(element);
+        }
+        elements
     }
 }

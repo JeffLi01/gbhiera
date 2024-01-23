@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-use crate::{Geometry, DataProvider};
+use crate::{DataProvider, Element, Geometry};
 
 #[derive(Default)]
 pub struct Bhiera {
@@ -52,26 +52,6 @@ impl Iterator for View {
     }
 }
 
-pub struct TextElement {
-    pub text: String,
-    pub x: i32,
-    pub y: i32,
-    pub fg: (u8, u8, u8),
-}
-
-pub struct RectangleElement {
-    pub x: i32,
-    pub y: i32,
-    pub width: i32,
-    pub height: i32,
-    pub bg: (u8, u8, u8),
-}
-
-pub enum Element {
-    Byte(TextElement),
-    Rectangle(RectangleElement),
-}
-
 pub trait Model {
     fn set_data_provider(&mut self, provider: impl DataProvider + 'static);
     fn get_view(&self, view_start: u32, view_height: u32) -> Option<View>;
@@ -93,89 +73,18 @@ impl Model for Bhiera {
             let offset = start_line as usize * 16;
             let mut elements = VecDeque::new();
             if let Some(bytes) = (*binary_data).get(offset, line_count as usize * 16) {
-                let element = Element::Rectangle(RectangleElement {
-                    x: 0,
-                    y: 0,
-                    width: self.geometry.width() as i32,
-                    height: view_height as i32,
-                    bg: (255, 255, 255),
-                });
-                elements.push_back(element);
+                elements.push_back(self.geometry.bg(view_height));
 
-                let element = Element::Rectangle(RectangleElement {
-                    x: 0,
-                    y: 0,
-                    width: self.geometry.offset_view_width as i32,
-                    height: view_height as i32,
-                    bg: (224, 224, 224),
-                });
-                elements.push_back(element);
+                elements.push_back(self.geometry.offset_view_bg(view_height));
 
-                for (line, line_offset) in (0..bytes.len()).step_by(16).enumerate() {
-                    let text = format!("{:08X}", offset + line_offset);
-                    let y = line * self.geometry.char_height as usize;
-                    let element = Element::Byte(TextElement {
-                        text,
-                        x: 0,
-                        y: y as i32,
-                        fg: (117, 117, 117),
-                    });
-                    elements.push_back(element);
-                }
+                elements.append(&mut self.geometry.offsets(offset, bytes.len()));
 
-                for (i, byte) in bytes.iter().enumerate() {
-                    let line = i / 16;
-                    let index = i % 16;
-                    let text = format!("{:02X}", byte);
-                    let mut x = self.geometry.offset_view_width
-                        + (self.geometry.char_width + self.geometry.hex_byte_width)
-                            * index as u32;
-                    if index >= 8 {
-                        x += self.geometry.char_width;
-                    }
-                    let y = line as u32 * self.geometry.char_height;
-
-                    let element = Element::Byte(TextElement {
-                        text,
-                        x: x as i32,
-                        y: y as i32,
-                        fg: (0, 0, 0),
-                    });
-                    elements.push_back(element);
-                }
-
-                for (i, byte) in bytes.iter().enumerate() {
-                    let line = i / 16;
-                    let index = i % 16;
-                    let text = {
-                        let c = match char::from_u32(*byte as u32) {
-                            Some(c) => {
-                                if c.is_ascii_graphic() {
-                                    c
-                                } else {
-                                    '.'
-                                }
-                            }
-                            None => '.',
-                        };
-                        format!("{}", c)
-                    };
-                    let x = self.geometry.offset_view_width
-                        + self.geometry.hex_view_width()
-                        + index as u32 * self.geometry.char_width;
-                    let y = line as u32 * self.geometry.char_height;
-
-                    let element = Element::Byte(TextElement {
-                        text,
-                        x: x as i32,
-                        y: y as i32,
-                        fg: (0, 0, 0),
-                    });
-                    elements.push_back(element);
-                }
+                elements.append(&mut self.geometry.text(bytes));
             };
 
-            let cursors = self.geometry.calc_cursor(view_start, view_height, self.selection_end);
+            let cursors = self
+                .geometry
+                .calc_cursor(view_start, view_height, self.selection_end);
 
             return Some(View {
                 offset,
@@ -192,10 +101,14 @@ impl Model for Bhiera {
     }
 
     fn set_selection_begin(&mut self, x: i32, y: i32) {
-        self.selection_begin = self.geometry.coordinate_to_byte(self.view_y, x as u32, y as u32);
+        self.selection_begin = self
+            .geometry
+            .coordinate_to_byte(self.view_y, x as u32, y as u32);
     }
 
     fn set_selection_end(&mut self, x: i32, y: i32) {
-        self.selection_end = self.geometry.coordinate_to_byte(self.view_y, x as u32, y as u32);
+        self.selection_end = self
+            .geometry
+            .coordinate_to_byte(self.view_y, x as u32, y as u32);
     }
 }

@@ -2,7 +2,7 @@ use image::{ImageBuffer, Pixel, Rgb};
 use plotters::prelude::*;
 use slint::SharedPixelBuffer;
 
-use bhiera::{Bhiera, Geometry, DataProvider, Element, Model};
+use bhiera::{Bhiera, DataProvider, Element, Geometry, Model};
 
 #[allow(dead_code)]
 #[derive(Clone)]
@@ -96,7 +96,7 @@ impl<'a> Plotter<'a> {
                             }
                         }
                     }
-                };
+                }
                 slint::Image::from_rgb8(pixel_buffer)
             }
             None => slint::Image::default(),
