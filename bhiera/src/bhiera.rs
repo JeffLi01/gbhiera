@@ -5,7 +5,7 @@ use crate::{Geometry, DataProvider};
 #[derive(Default)]
 pub struct Bhiera {
     data_provider: Option<Box<dyn DataProvider>>,
-    plot_config: Geometry,
+    geometry: Geometry,
     view_y: u32,
     selection_begin: usize,
     selection_end: usize,
@@ -19,50 +19,8 @@ impl Bhiera {
         }
     }
 
-    pub fn set_geometry(&mut self, config: &Geometry) {
-        self.plot_config = *config;
-    }
-
-    fn calc_cursor(&self, view_start: u32, view_height: u32) -> Vec<(u32, u32, u32, u32)> {
-        let view_start = view_start - view_start % self.plot_config.char_height;
-        let mut cursors = Vec::new();
-        let cursor_width = 2;
-        let cursor_height = self.plot_config.char_height;
-        let line_index = self.selection_end / 16;
-        let byte_index = self.selection_end % 16;
-        let combo_width = self.plot_config.char_width + self.plot_config.hex_byte_width;
-        let x = self.plot_config.offset_view_width + if byte_index < 8 {
-            byte_index as u32 * combo_width
-        } else {
-            byte_index as u32 * combo_width + self.plot_config.char_width
-        };
-        let y: u32 = {
-            line_index as u32 * self.plot_config.char_height
-        };
-        if y > view_start && y < view_start + view_height {
-            cursors.push((x, y - view_start, cursor_width, cursor_height));
-            let x = self.plot_config.offset_view_width + self.plot_config.hex_view_width() + byte_index as u32 * self.plot_config.char_width;
-            cursors.push((x, y - view_start, cursor_width, cursor_height));
-        }
-        cursors
-    }
-
-    fn coordinate_to_byte(&self, x: u32, y: u32) -> usize {
-        let line_index = (self.view_y + y) / self.plot_config.char_height;
-        let combo_width = self.plot_config.char_width + self.plot_config.hex_byte_width;
-        let byte_index = match x {
-            x if x < self.plot_config.offset_view_width => 0,
-            x if x < self.plot_config.offset_view_width + self.plot_config.hex_view_width() - self.plot_config.char_width * 2 => {
-                (x - self.plot_config.offset_view_width) / combo_width
-            },
-            x if x < self.plot_config.offset_view_width + self.plot_config.hex_view_width() - self.plot_config.char_width => 15,
-            x if x < self.plot_config.offset_view_width + self.plot_config.hex_view_width() - self.plot_config.char_width / 2 => 0,
-            x if x < self.plot_config.width() - self.plot_config.char_width => {
-                (x - self.plot_config.offset_view_width - self.plot_config.hex_view_width() + self.plot_config.char_width / 2) / self.plot_config.char_width
-            },
-            _ => 15,
-        };
-        (line_index * 16 + byte_index) as usize
+    pub fn set_geometry(&mut self, geometry: &Geometry) {
+        self.geometry = *geometry;
     }
 }
 
@@ -130,15 +88,15 @@ impl Model for Bhiera {
     fn get_view(&self, view_start: u32, view_height: u32) -> Option<View> {
         if let Some(binary_data) = &self.data_provider {
             let start_line =
-                (view_start + self.plot_config.char_height - 1) / self.plot_config.char_height;
-            let line_count = view_height as u32 / self.plot_config.char_height;
+                (view_start + self.geometry.char_height - 1) / self.geometry.char_height;
+            let line_count = view_height as u32 / self.geometry.char_height;
             let offset = start_line as usize * 16;
             let mut elements = VecDeque::new();
             if let Some(bytes) = (*binary_data).get(offset, line_count as usize * 16) {
                 let element = Element::Rectangle(RectangleElement {
                     x: 0,
                     y: 0,
-                    width: self.plot_config.width() as i32,
+                    width: self.geometry.width() as i32,
                     height: view_height as i32,
                     bg: (255, 255, 255),
                 });
@@ -147,7 +105,7 @@ impl Model for Bhiera {
                 let element = Element::Rectangle(RectangleElement {
                     x: 0,
                     y: 0,
-                    width: self.plot_config.offset_view_width as i32,
+                    width: self.geometry.offset_view_width as i32,
                     height: view_height as i32,
                     bg: (224, 224, 224),
                 });
@@ -155,7 +113,7 @@ impl Model for Bhiera {
 
                 for (line, line_offset) in (0..bytes.len()).step_by(16).enumerate() {
                     let text = format!("{:08X}", offset + line_offset);
-                    let y = line * self.plot_config.char_height as usize;
+                    let y = line * self.geometry.char_height as usize;
                     let element = Element::Byte(TextElement {
                         text,
                         x: 0,
@@ -169,13 +127,13 @@ impl Model for Bhiera {
                     let line = i / 16;
                     let index = i % 16;
                     let text = format!("{:02X}", byte);
-                    let mut x = self.plot_config.offset_view_width
-                        + (self.plot_config.char_width + self.plot_config.hex_byte_width)
+                    let mut x = self.geometry.offset_view_width
+                        + (self.geometry.char_width + self.geometry.hex_byte_width)
                             * index as u32;
                     if index >= 8 {
-                        x += self.plot_config.char_width;
+                        x += self.geometry.char_width;
                     }
-                    let y = line as u32 * self.plot_config.char_height;
+                    let y = line as u32 * self.geometry.char_height;
 
                     let element = Element::Byte(TextElement {
                         text,
@@ -202,10 +160,10 @@ impl Model for Bhiera {
                         };
                         format!("{}", c)
                     };
-                    let x = self.plot_config.offset_view_width
-                        + self.plot_config.hex_view_width()
-                        + index as u32 * self.plot_config.char_width;
-                    let y = line as u32 * self.plot_config.char_height;
+                    let x = self.geometry.offset_view_width
+                        + self.geometry.hex_view_width()
+                        + index as u32 * self.geometry.char_width;
+                    let y = line as u32 * self.geometry.char_height;
 
                     let element = Element::Byte(TextElement {
                         text,
@@ -217,7 +175,7 @@ impl Model for Bhiera {
                 }
             };
 
-            let cursors = self.calc_cursor(view_start, view_height);
+            let cursors = self.geometry.calc_cursor(view_start, view_height, self.selection_end);
 
             return Some(View {
                 offset,
@@ -234,10 +192,10 @@ impl Model for Bhiera {
     }
 
     fn set_selection_begin(&mut self, x: i32, y: i32) {
-        self.selection_begin = self.coordinate_to_byte(x as u32, y as u32);
+        self.selection_begin = self.geometry.coordinate_to_byte(self.view_y, x as u32, y as u32);
     }
 
     fn set_selection_end(&mut self, x: i32, y: i32) {
-        self.selection_end = self.coordinate_to_byte(x as u32, y as u32);
+        self.selection_end = self.geometry.coordinate_to_byte(self.view_y, x as u32, y as u32);
     }
 }

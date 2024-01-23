@@ -19,4 +19,46 @@ impl Geometry {
     pub fn char_view_width(&self) -> u32 {
         self.char_width * 16
     }
+
+    pub fn calc_cursor(&self, view_start: u32, view_height: u32, current_byte: usize) -> Vec<(u32, u32, u32, u32)> {
+        let view_start = view_start - view_start % self.char_height;
+        let mut cursors = Vec::new();
+        let cursor_width = 2;
+        let cursor_height = self.char_height;
+        let line_index = current_byte / 16;
+        let byte_index = current_byte % 16;
+        let combo_width = self.char_width + self.hex_byte_width;
+        let x = self.offset_view_width + if byte_index < 8 {
+            byte_index as u32 * combo_width
+        } else {
+            byte_index as u32 * combo_width + self.char_width
+        };
+        let y: u32 = {
+            line_index as u32 * self.char_height
+        };
+        if y > view_start && y < view_start + view_height {
+            cursors.push((x, y - view_start, cursor_width, cursor_height));
+            let x = self.offset_view_width + self.hex_view_width() + byte_index as u32 * self.char_width;
+            cursors.push((x, y - view_start, cursor_width, cursor_height));
+        }
+        cursors
+    }
+
+    pub fn coordinate_to_byte(&self, y_offset: u32, x: u32, y: u32) -> usize {
+        let line_index = (y_offset + y) / self.char_height;
+        let combo_width = self.char_width + self.hex_byte_width;
+        let byte_index = match x {
+            x if x < self.offset_view_width => 0,
+            x if x < self.offset_view_width + self.hex_view_width() - self.char_width * 2 => {
+                (x - self.offset_view_width) / combo_width
+            },
+            x if x < self.offset_view_width + self.hex_view_width() - self.char_width => 15,
+            x if x < self.offset_view_width + self.hex_view_width() - self.char_width / 2 => 0,
+            x if x < self.width() - self.char_width => {
+                (x - self.offset_view_width - self.hex_view_width() + self.char_width / 2) / self.char_width
+            },
+            _ => 15,
+        };
+        (line_index * 16 + byte_index) as usize
+    }
 }
