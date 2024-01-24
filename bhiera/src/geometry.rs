@@ -5,7 +5,6 @@ use crate::{
     Element,
 };
 
-#[allow(dead_code)]
 #[derive(Clone, Copy, Default)]
 pub struct Geometry {
     char_width: u32,
@@ -128,23 +127,23 @@ impl Geometry {
         (line_index * 16 + byte_index) as usize
     }
 
-    fn byte_x(&self, byte_offset: usize) -> u32 {
-        let byte_index = byte_offset % 16;
-        self.hex_view_start + byte_index as u32 * (self.hex_byte_width + self.char_width) + if byte_index < 8 {
-            0
-        } else {
-            self.char_width
-        }
-    }
-
-    fn byte_y(&self, byte_offset: usize) -> u32 {
-        (byte_offset / 16) as u32 * self.char_height
-    }
-
-    fn byte_coordinate(&self, byte_offset: usize) -> (u32, u32, u32, u32) {
-        let x = self.byte_x(byte_offset);
-        let y = self.byte_y(byte_offset);
+    fn hex_coordinate(&self, byte_offset: usize) -> (u32, u32, u32, u32) {
+        let x = {
+            let byte_index = byte_offset % 16;
+            self.hex_view_start + byte_index as u32 * (self.hex_byte_width + self.char_width) + if byte_index < 8 {
+                0
+            } else {
+                self.char_width
+            }
+        };
+        let y = (byte_offset / 16) as u32 * self.char_height;
         (x, y, self.hex_byte_width, self.char_height)
+    }
+
+    fn char_coordinate(&self, byte_offset: usize) -> (u32, u32, u32, u32) {
+        let x = self.char_view_start + (byte_offset % 16) as u32 * self.char_width;
+        let y = (byte_offset / 16) as u32 * self.char_height;
+        (x, y, self.char_width, self.char_height)
     }
 
     pub fn bg(&self, height: u32) -> Element {
@@ -192,8 +191,8 @@ impl Geometry {
             return elements;
         }
         println!("{visible_begin}, {visible_end}");
-        let (x1, y1, _, _) = self.byte_coordinate(visible_begin - byte_offset);
-        let (x2, y2, width, _) = self.byte_coordinate(visible_end - byte_offset - 1);
+        let (x1, y1, _, _) = self.hex_coordinate(visible_begin - byte_offset);
+        let (x2, y2, width, _) = self.hex_coordinate(visible_end - byte_offset - 1);
         println!("x1: {x1}, y1: {y1}");
         println!("x2: {x2}, y2: {y2}, width: {width}");
         if y2 == y1 {
@@ -202,7 +201,7 @@ impl Geometry {
                 y: y1 as i32,
                 width: (x2 + width - x1) as i32,
                 height: self.char_height as i32,
-                bg: (0, 200, 200),
+                bg: (0, 220, 220),
             });
             elements.push_back(element);
         } else if y2 > y1 {
@@ -211,7 +210,7 @@ impl Geometry {
                 y: y1 as i32,
                 width: (self.hex_view_end - x1) as i32,
                 height: self.char_height as i32,
-                bg: (0, 200, 200),
+                bg: (0, 220, 220),
             });
             elements.push_back(element);
             let element = Element::Rectangle(RectangleElement{
@@ -219,19 +218,56 @@ impl Geometry {
                 y: (y1 + self.char_height) as i32,
                 width: self.hex_view_width as i32,
                 height: (y2 - y1 - self.char_height) as i32,
-                bg: (0, 200, 200),
+                bg: (0, 220, 220),
             });
             elements.push_back(element);
-            if (visible_end % 16) != 0 {
-                let element = Element::Rectangle(RectangleElement{
-                    x: self.hex_view_start as i32,
-                    y: y2 as i32,
-                    width: (x2 + width - self.hex_view_start) as i32,
-                    height: self.char_height as i32,
-                    bg: (0, 200, 200),
-                });
-                elements.push_back(element);
-            }
+            let element = Element::Rectangle(RectangleElement{
+                x: self.hex_view_start as i32,
+                y: y2 as i32,
+                width: (x2 + width - self.hex_view_start) as i32,
+                height: self.char_height as i32,
+                bg: (0, 220, 220),
+            });
+            elements.push_back(element);
+        }
+        let (x1, y1, _, _) = self.char_coordinate(visible_begin - byte_offset);
+        let (x2, y2, width, _) = self.char_coordinate(visible_end - byte_offset - 1);
+        println!("x1: {x1}, y1: {y1}");
+        println!("x2: {x2}, y2: {y2}, width: {width}");
+        if y2 == y1 {
+            let element = Element::Rectangle(RectangleElement{
+                x: x1 as i32,
+                y: y1 as i32,
+                width: (x2 + width - x1) as i32,
+                height: self.char_height as i32,
+                bg: (0, 220, 220),
+            });
+            elements.push_back(element);
+        } else if y2 > y1 {
+            let element = Element::Rectangle(RectangleElement{
+                x: x1 as i32,
+                y: y1 as i32,
+                width: (self.char_view_end - x1) as i32,
+                height: self.char_height as i32,
+                bg: (0, 220, 220),
+            });
+            elements.push_back(element);
+            let element = Element::Rectangle(RectangleElement{
+                x: self.char_view_start as i32,
+                y: (y1 + self.char_height) as i32,
+                width: self.char_view_width as i32,
+                height: (y2 - y1 - self.char_height) as i32,
+                bg: (0, 220, 220),
+            });
+            elements.push_back(element);
+            let element = Element::Rectangle(RectangleElement{
+                x: self.char_view_start as i32,
+                y: y2 as i32,
+                width: (x2 + width - self.char_view_start) as i32,
+                height: self.char_height as i32,
+                bg: (0, 220, 220),
+            });
+            elements.push_back(element);
         }
         elements
     }
