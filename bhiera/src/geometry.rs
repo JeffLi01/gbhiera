@@ -39,9 +39,12 @@ impl Geometry {
     }
 
     pub fn byte_offset(&self, view_start: u32) -> usize {
-        let start_line =
-            (view_start + self.char_height - 1) / self.char_height;
-        start_line as usize * 16
+        let start_line = self.line_index(view_start);
+        start_line * 16
+    }
+
+    fn line_index(&self, view_start: u32) -> usize {
+        ((view_start + self.char_height - 1) / self.char_height) as usize
     }
 
     pub fn line_count(&self, view_height: u32) -> usize {
@@ -62,26 +65,27 @@ impl Geometry {
         view_height: u32,
         current_byte: usize,
     ) -> Vec<(u32, u32, u32, u32)> {
-        let view_start = view_start - view_start % self.char_height;
+        let byte_offset = self.byte_offset(view_start);
+        let line_count = self.line_count(view_height);
         let mut cursors = Vec::new();
-        let cursor_width = 2;
-        let cursor_height = self.char_height;
-        let line_index = current_byte / 16;
-        let byte_index = current_byte % 16;
-        let combo_width = self.char_width + self.hex_byte_width;
-        let x = self.offset_view_width
-            + if byte_index < 8 {
-                byte_index as u32 * combo_width
-            } else {
-                byte_index as u32 * combo_width + self.char_width
-            };
-        let y: u32 = { line_index as u32 * self.char_height };
-        if y > view_start && y < view_start + view_height {
-            cursors.push((x, y - view_start, cursor_width, cursor_height));
+        if current_byte >= byte_offset && current_byte < (byte_offset + line_count * 16) {
+            let cursor_width = 2;
+            let cursor_height = self.char_height;
+            let line_index = (current_byte - byte_offset) / 16;
+            let byte_index = (current_byte - byte_offset) % 16;
+            let combo_width = self.char_width + self.hex_byte_width;
+            let x = self.offset_view_width
+                + if byte_index < 8 {
+                    byte_index as u32 * combo_width
+                } else {
+                    byte_index as u32 * combo_width + self.char_width
+                };
+            let y: u32 = { line_index as u32 * self.char_height };
+            cursors.push((x, y, cursor_width, cursor_height));
             let x = self.offset_view_width
                 + self.hex_view_width()
                 + byte_index as u32 * self.char_width;
-            cursors.push((x, y - view_start, cursor_width, cursor_height));
+            cursors.push((x, y, cursor_width, cursor_height));
         }
         cursors
     }
