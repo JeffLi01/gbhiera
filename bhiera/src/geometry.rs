@@ -5,12 +5,21 @@ use crate::{
     Element,
 };
 
+#[allow(dead_code)]
 #[derive(Clone, Copy, Default)]
 pub struct Geometry {
     char_width: u32,
     char_height: u32,
     hex_byte_width: u32,
     offset_view_width: u32,
+    /* below values are calculated */
+    hex_view_start: u32,
+    hex_view_width: u32,
+    hex_view_end: u32,
+    char_view_start: u32,
+    char_view_width: u32,
+    char_view_end: u32,
+    width: u32,
 }
 
 impl Geometry {
@@ -20,11 +29,27 @@ impl Geometry {
         hex_byte_width: u32,
         offset_view_width: u32,
     ) -> Self {
+        let hex_view_start = offset_view_width;
+        let hex_view_width = {
+            (char_width + hex_byte_width) * 16
+        };
+        let hex_view_end = hex_view_start + hex_view_width;
+        let char_view_start = hex_view_end + char_width * 2;
+        let char_view_width = char_width * 16;
+        let char_view_end = char_view_start + char_view_width;
+        let width = char_view_end + char_width;
         Self {
             char_width,
             char_height,
             hex_byte_width,
             offset_view_width,
+            hex_view_start,
+            hex_view_width,
+            hex_view_end,
+            char_view_start,
+            char_view_width,
+            char_view_end,
+            width,
         }
     }
 
@@ -34,8 +59,7 @@ impl Geometry {
     }
 
     pub fn width(&self) -> u32 {
-        let right_margin = self.char_width;
-        self.offset_view_width + self.hex_view_width() + self.char_view_width() + right_margin
+        self.width
     }
 
     pub fn byte_offset(&self, view_start: u32) -> usize {
@@ -49,10 +73,6 @@ impl Geometry {
 
     pub fn line_count(&self, view_height: u32) -> usize {
         (view_height / self.char_height) as usize
-    }
-
-    pub fn hex_view_width(&self) -> u32 {
-        (self.char_width + self.hex_byte_width) * 16 + self.char_width * 2
     }
 
     pub fn char_view_width(&self) -> u32 {
@@ -74,7 +94,7 @@ impl Geometry {
             let line_index = (current_byte - byte_offset) / 16;
             let byte_index = (current_byte - byte_offset) % 16;
             let combo_width = self.char_width + self.hex_byte_width;
-            let x = self.offset_view_width
+            let x = self.hex_view_start
                 + if byte_index < 8 {
                     byte_index as u32 * combo_width
                 } else {
@@ -82,8 +102,7 @@ impl Geometry {
                 };
             let y: u32 = { line_index as u32 * self.char_height };
             cursors.push((x, y, cursor_width, cursor_height));
-            let x = self.offset_view_width
-                + self.hex_view_width()
+            let x = self.char_view_start
                 + byte_index as u32 * self.char_width;
             cursors.push((x, y, cursor_width, cursor_height));
         }
@@ -94,14 +113,14 @@ impl Geometry {
         let line_index = (y_offset + y) / self.char_height;
         let combo_width = self.char_width + self.hex_byte_width;
         let byte_index = match x {
-            x if x < self.offset_view_width => 0,
-            x if x < self.offset_view_width + self.hex_view_width() - self.char_width * 2 => {
-                (x - self.offset_view_width) / combo_width
+            x if x < self.hex_view_start => 0,
+            x if x < self.hex_view_end => {
+                (x - self.hex_view_start) / combo_width
             }
-            x if x < self.offset_view_width + self.hex_view_width() - self.char_width => 15,
-            x if x < self.offset_view_width + self.hex_view_width() - self.char_width / 2 => 0,
+            x if x < (self.hex_view_end + self.char_view_start) / 2 => 15,
+            x if x < self.char_view_start + self.char_width / 2 => 0,
             x if x < self.width() - self.char_width => {
-                (x - self.offset_view_width - self.hex_view_width() + self.char_width / 2)
+                (x - self.char_view_start + self.char_width / 2)
                     / self.char_width
             }
             _ => 15,
@@ -111,7 +130,7 @@ impl Geometry {
 
     fn byte_x(&self, byte_offset: usize) -> u32 {
         let byte_index = byte_offset % 16;
-        self.offset_view_width + byte_index as u32 * (self.hex_byte_width + self.char_width) + if byte_index < 8 {
+        self.hex_view_start + byte_index as u32 * (self.hex_byte_width + self.char_width) + if byte_index < 8 {
             0
         } else {
             self.char_width
@@ -190,24 +209,24 @@ impl Geometry {
             let element = Element::Rectangle(RectangleElement{
                 x: x1 as i32,
                 y: y1 as i32,
-                width: (self.offset_view_width + self.hex_view_width() - x1) as i32,
+                width: (self.hex_view_end - x1) as i32,
                 height: self.char_height as i32,
                 bg: (0, 200, 200),
             });
             elements.push_back(element);
             let element = Element::Rectangle(RectangleElement{
-                x: self.offset_view_width as i32,
+                x: self.hex_view_start as i32,
                 y: (y1 + self.char_height) as i32,
-                width: self.hex_view_width() as i32,
+                width: self.hex_view_width as i32,
                 height: (y2 - y1 - self.char_height) as i32,
                 bg: (0, 200, 200),
             });
             elements.push_back(element);
             if (visible_end % 16) != 0 {
                 let element = Element::Rectangle(RectangleElement{
-                    x: self.offset_view_width as i32,
+                    x: self.hex_view_start as i32,
                     y: y2 as i32,
-                    width: (x2 + width - self.offset_view_width) as i32,
+                    width: (x2 + width - self.hex_view_start) as i32,
                     height: self.char_height as i32,
                     bg: (0, 200, 200),
                 });
@@ -240,7 +259,7 @@ impl Geometry {
             let index = i % 16;
             let text = format!("{:02X}", byte);
             let mut x =
-                self.offset_view_width + (self.char_width + self.hex_byte_width) * index as u32;
+                self.hex_view_start + (self.char_width + self.hex_byte_width) * index as u32;
             if index >= 8 {
                 x += self.char_width;
             }
@@ -271,7 +290,7 @@ impl Geometry {
                 };
                 format!("{}", c)
             };
-            let x = self.offset_view_width + self.hex_view_width() + index as u32 * self.char_width;
+            let x = self.char_view_start + index as u32 * self.char_width;
             let y = line as u32 * self.char_height;
 
             let element = Element::Byte(TextElement {
