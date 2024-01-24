@@ -1,4 +1,4 @@
-use std::collections::VecDeque;
+use std::{cmp::{max, min}, collections::VecDeque};
 
 use crate::{
     element::{RectangleElement, TextElement},
@@ -109,6 +109,25 @@ impl Geometry {
         (line_index * 16 + byte_index) as usize
     }
 
+    fn byte_x(&self, byte_offset: usize) -> u32 {
+        let byte_index = byte_offset % 16;
+        self.offset_view_width + byte_index as u32 * (self.hex_byte_width + self.char_width) + if byte_index < 8 {
+            0
+        } else {
+            self.char_width
+        }
+    }
+
+    fn byte_y(&self, byte_offset: usize) -> u32 {
+        (byte_offset / 16) as u32 * self.char_height
+    }
+
+    fn byte_coordinate(&self, byte_offset: usize) -> (u32, u32, u32, u32) {
+        let x = self.byte_x(byte_offset);
+        let y = self.byte_y(byte_offset);
+        (x, y, self.hex_byte_width, self.char_height)
+    }
+
     pub fn bg(&self, height: u32) -> Element {
         Element::Rectangle(RectangleElement {
             x: 0,
@@ -127,6 +146,75 @@ impl Geometry {
             height: height as i32,
             bg: (224, 224, 224),
         })
+    }
+
+    pub fn selection(
+        &self,
+        view_start: u32,
+        view_height: u32,
+        selection_begin: usize,
+        selection_end: usize,
+    ) -> VecDeque<Element> {
+        println!("{view_start}, {view_height}, {selection_begin}, {selection_end}");
+        let mut elements = VecDeque::new();
+        if selection_begin == selection_end {
+            return elements;
+        }
+        let (selection_begin, selection_end) = if selection_begin <= selection_end {
+            (selection_begin, selection_end)
+        } else {
+            (selection_end, selection_begin)
+        };
+        let byte_offset = self.byte_offset(view_start);
+        let capacity = self.line_count(view_height) * 16;
+        let visible_begin = max(selection_begin, byte_offset);
+        let visible_end = min(selection_end, byte_offset + capacity);
+        if visible_begin >= visible_end {
+            return elements;
+        }
+        println!("{visible_begin}, {visible_end}");
+        let (x1, y1, _, _) = self.byte_coordinate(visible_begin - byte_offset);
+        let (x2, y2, width, _) = self.byte_coordinate(visible_end - byte_offset - 1);
+        println!("x1: {x1}, y1: {y1}");
+        println!("x2: {x2}, y2: {y2}, width: {width}");
+        if y2 == y1 {
+            let element = Element::Rectangle(RectangleElement{
+                x: x1 as i32,
+                y: y1 as i32,
+                width: (x2 + width - x1) as i32,
+                height: self.char_height as i32,
+                bg: (0, 200, 200),
+            });
+            elements.push_back(element);
+        } else if y2 > y1 {
+            let element = Element::Rectangle(RectangleElement{
+                x: x1 as i32,
+                y: y1 as i32,
+                width: (self.offset_view_width + self.hex_view_width() - x1) as i32,
+                height: self.char_height as i32,
+                bg: (0, 200, 200),
+            });
+            elements.push_back(element);
+            let element = Element::Rectangle(RectangleElement{
+                x: self.offset_view_width as i32,
+                y: (y1 + self.char_height) as i32,
+                width: self.hex_view_width() as i32,
+                height: (y2 - y1 - self.char_height) as i32,
+                bg: (0, 200, 200),
+            });
+            elements.push_back(element);
+            if (visible_end % 16) != 0 {
+                let element = Element::Rectangle(RectangleElement{
+                    x: self.offset_view_width as i32,
+                    y: y2 as i32,
+                    width: (x2 + width - self.offset_view_width) as i32,
+                    height: self.char_height as i32,
+                    bg: (0, 200, 200),
+                });
+                elements.push_back(element);
+            }
+        }
+        elements
     }
 
     pub fn offsets(&self, offset: usize, size: usize) -> VecDeque<Element> {
