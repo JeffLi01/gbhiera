@@ -1,6 +1,6 @@
 use std::collections::VecDeque;
 
-use crate::{DataProvider, Element, Geometry};
+use crate::{DataProvider, Geometry, View};
 
 #[derive(Default)]
 pub struct Bhiera {
@@ -21,25 +21,6 @@ impl Bhiera {
 
     pub fn set_geometry(&mut self, geometry: &Geometry) {
         self.geometry = *geometry;
-    }
-}
-
-#[derive(Default)]
-pub struct View {
-    elements: VecDeque<Element>,
-    cursors: Vec<(u32, u32, u32, u32)>,
-}
-
-impl View {
-    pub fn get_cursur(&self) -> Vec<(u32, u32, u32, u32)> {
-        self.cursors.to_owned()
-    }
-}
-
-impl Iterator for View {
-    type Item = Element;
-    fn next(&mut self) -> Option<Self::Item> {
-        self.elements.pop_front()
     }
 }
 
@@ -75,11 +56,7 @@ impl Model for Bhiera {
                 .geometry
                 .calc_cursor(view_start, view_height, self.selection_end);
 
-            return Some(View {
-                elements,
-                cursors,
-                ..Default::default()
-            });
+            return Some(View::new(elements, cursors));
         }
         None
     }
