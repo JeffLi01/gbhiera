@@ -25,20 +25,18 @@ impl<'a> Plotter<'a> {
             .unwrap();
 
         Self {
-            config: Geometry {
+            config: Geometry::new(
                 char_width,
                 char_height,
                 hex_byte_width,
                 offset_view_width,
-            },
+            ),
             text_style,
         }
     }
 
     pub fn geometry<D: DataProvider + 'static>(&self, provider: &D) -> (u32, u32) {
-        let total_line_count = (provider.len() + 15) / 16;
-        let height = self.config.char_height * total_line_count as u32;
-        (self.config.width(), height)
+        (self.config.width(), self.config.height(provider.len()))
     }
 
     pub fn plot(&self, bhiera: &Bhiera, view_start: i32, view_height: i32) -> slint::Image {

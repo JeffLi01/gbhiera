@@ -7,16 +7,45 @@ use crate::{
 
 #[derive(Clone, Copy, Default)]
 pub struct Geometry {
-    pub char_width: u32,
-    pub char_height: u32,
-    pub hex_byte_width: u32,
-    pub offset_view_width: u32,
+    char_width: u32,
+    char_height: u32,
+    hex_byte_width: u32,
+    offset_view_width: u32,
 }
 
 impl Geometry {
+    pub fn new(
+        char_width: u32,
+        char_height: u32,
+        hex_byte_width: u32,
+        offset_view_width: u32,
+    ) -> Self {
+        Self {
+            char_width,
+            char_height,
+            hex_byte_width,
+            offset_view_width,
+        }
+    }
+
+    pub fn height(&self, byte_count: usize) -> u32 {
+        let total_line_count = (byte_count + 15) / 16;
+        self.char_height * total_line_count as u32
+    }
+
     pub fn width(&self) -> u32 {
         let right_margin = self.char_width;
         self.offset_view_width + self.hex_view_width() + self.char_view_width() + right_margin
+    }
+
+    pub fn byte_offset(&self, view_start: u32) -> usize {
+        let start_line =
+            (view_start + self.char_height - 1) / self.char_height;
+        start_line as usize * 16
+    }
+
+    pub fn line_count(&self, view_height: u32) -> usize {
+        (view_height / self.char_height) as usize
     }
 
     pub fn hex_view_width(&self) -> u32 {

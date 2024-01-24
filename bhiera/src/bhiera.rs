@@ -26,20 +26,11 @@ impl Bhiera {
 
 #[derive(Default)]
 pub struct View {
-    offset: usize,
     elements: VecDeque<Element>,
     cursors: Vec<(u32, u32, u32, u32)>,
 }
 
 impl View {
-    pub fn offset(&self) -> usize {
-        self.offset
-    }
-
-    pub fn size(&self) -> usize {
-        self.elements.len()
-    }
-
     pub fn get_cursur(&self) -> Vec<(u32, u32, u32, u32)> {
         self.cursors.to_owned()
     }
@@ -67,17 +58,15 @@ impl Model for Bhiera {
 
     fn get_view(&self, view_start: u32, view_height: u32) -> Option<View> {
         if let Some(binary_data) = &self.data_provider {
-            let start_line =
-                (view_start + self.geometry.char_height - 1) / self.geometry.char_height;
-            let line_count = view_height as u32 / self.geometry.char_height;
-            let offset = start_line as usize * 16;
+            let byte_offset = self.geometry.byte_offset(view_start);
+            let line_count = self.geometry.line_count(view_height);
             let mut elements = VecDeque::new();
-            if let Some(bytes) = (*binary_data).get(offset, line_count as usize * 16) {
+            if let Some(bytes) = (*binary_data).get(byte_offset, line_count as usize * 16) {
                 elements.push_back(self.geometry.bg(view_height));
 
                 elements.push_back(self.geometry.offset_view_bg(view_height));
 
-                elements.append(&mut self.geometry.offsets(offset, bytes.len()));
+                elements.append(&mut self.geometry.offsets(byte_offset, bytes.len()));
 
                 elements.append(&mut self.geometry.text(bytes));
             };
@@ -87,7 +76,6 @@ impl Model for Bhiera {
                 .calc_cursor(view_start, view_height, self.selection_end);
 
             return Some(View {
-                offset,
                 elements,
                 cursors,
                 ..Default::default()
