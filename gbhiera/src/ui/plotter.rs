@@ -25,12 +25,7 @@ impl<'a> Plotter<'a> {
             .unwrap();
 
         Self {
-            config: Geometry::new(
-                char_width,
-                char_height,
-                hex_byte_width,
-                offset_view_width,
-            ),
+            config: Geometry::new(char_width, char_height, hex_byte_width, offset_view_width),
             text_style,
         }
     }
