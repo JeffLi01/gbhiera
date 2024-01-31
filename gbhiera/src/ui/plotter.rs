@@ -61,7 +61,10 @@ impl<'a> Plotter<'a> {
                             backend
                                 .draw_rect(
                                     (rectangle.x, rectangle.y),
-                                    (rectangle.x + rectangle.width, rectangle.y + rectangle.height),
+                                    (
+                                        rectangle.x + rectangle.width,
+                                        rectangle.y + rectangle.height,
+                                    ),
                                     &bg_color,
                                     true,
                                 )

@@ -47,7 +47,12 @@ impl Model for Bhiera {
 
                 elements.push_back(self.geometry.offset_view_bg(view_height));
 
-                elements.append(&mut self.geometry.selection(view_start, view_height, self.selection_begin, self.selection_end));
+                elements.append(&mut self.geometry.selection(
+                    view_start,
+                    view_height,
+                    self.selection_begin,
+                    self.selection_end,
+                ));
 
                 elements.append(&mut self.geometry.offsets(byte_offset, bytes.len()));
 

@@ -1,4 +1,7 @@
-use std::{cmp::{max, min}, collections::VecDeque};
+use std::{
+    cmp::{max, min},
+    collections::VecDeque,
+};
 
 use crate::{
     element::{RectangleElement, TextElement},
@@ -29,9 +32,7 @@ impl Geometry {
         offset_view_width: u32,
     ) -> Self {
         let hex_view_start = offset_view_width;
-        let hex_view_width = {
-            (char_width + hex_byte_width) * 16
-        };
+        let hex_view_width = (char_width + hex_byte_width) * 16;
         let hex_view_end = hex_view_start + hex_view_width;
         let char_view_start = hex_view_end + char_width * 2;
         let char_view_width = char_width * 16;
@@ -101,8 +102,7 @@ impl Geometry {
                 };
             let y: u32 = { line_index as u32 * self.char_height };
             cursors.push((x, y, cursor_width, cursor_height));
-            let x = self.char_view_start
-                + byte_index as u32 * self.char_width;
+            let x = self.char_view_start + byte_index as u32 * self.char_width;
             cursors.push((x, y, cursor_width, cursor_height));
         }
         cursors
@@ -113,14 +113,11 @@ impl Geometry {
         let combo_width = self.char_width + self.hex_byte_width;
         let byte_index = match x {
             x if x < self.hex_view_start => 0,
-            x if x < self.hex_view_end => {
-                (x - self.hex_view_start) / combo_width
-            }
+            x if x < self.hex_view_end => (x - self.hex_view_start) / combo_width,
             x if x < (self.hex_view_end + self.char_view_start) / 2 => 15,
             x if x < self.char_view_start + self.char_width / 2 => 0,
             x if x < self.width() - self.char_width => {
-                (x - self.char_view_start + self.char_width / 2)
-                    / self.char_width
+                (x - self.char_view_start + self.char_width / 2) / self.char_width
             }
             _ => 15,
         };
@@ -130,11 +127,9 @@ impl Geometry {
     fn hex_coordinate(&self, byte_offset: usize) -> (u32, u32, u32, u32) {
         let x = {
             let byte_index = byte_offset % 16;
-            self.hex_view_start + byte_index as u32 * (self.hex_byte_width + self.char_width) + if byte_index < 8 {
-                0
-            } else {
-                self.char_width
-            }
+            self.hex_view_start
+                + byte_index as u32 * (self.hex_byte_width + self.char_width)
+                + if byte_index < 8 { 0 } else { self.char_width }
         };
         let y = (byte_offset / 16) as u32 * self.char_height;
         (x, y, self.hex_byte_width, self.char_height)
@@ -196,7 +191,7 @@ impl Geometry {
         println!("x1: {x1}, y1: {y1}");
         println!("x2: {x2}, y2: {y2}, width: {width}");
         if y2 == y1 {
-            let element = Element::Rectangle(RectangleElement{
+            let element = Element::Rectangle(RectangleElement {
                 x: x1 as i32,
                 y: y1 as i32,
                 width: (x2 + width - x1) as i32,
@@ -205,7 +200,7 @@ impl Geometry {
             });
             elements.push_back(element);
         } else if y2 > y1 {
-            let element = Element::Rectangle(RectangleElement{
+            let element = Element::Rectangle(RectangleElement {
                 x: x1 as i32,
                 y: y1 as i32,
                 width: (self.hex_view_end - x1) as i32,
@@ -213,7 +208,7 @@ impl Geometry {
                 bg: (0, 220, 220),
             });
             elements.push_back(element);
-            let element = Element::Rectangle(RectangleElement{
+            let element = Element::Rectangle(RectangleElement {
                 x: self.hex_view_start as i32,
                 y: (y1 + self.char_height) as i32,
                 width: self.hex_view_width as i32,
@@ -221,7 +216,7 @@ impl Geometry {
                 bg: (0, 220, 220),
             });
             elements.push_back(element);
-            let element = Element::Rectangle(RectangleElement{
+            let element = Element::Rectangle(RectangleElement {
                 x: self.hex_view_start as i32,
                 y: y2 as i32,
                 width: (x2 + width - self.hex_view_start) as i32,
@@ -235,7 +230,7 @@ impl Geometry {
         println!("x1: {x1}, y1: {y1}");
         println!("x2: {x2}, y2: {y2}, width: {width}");
         if y2 == y1 {
-            let element = Element::Rectangle(RectangleElement{
+            let element = Element::Rectangle(RectangleElement {
                 x: x1 as i32,
                 y: y1 as i32,
                 width: (x2 + width - x1) as i32,
@@ -244,7 +239,7 @@ impl Geometry {
             });
             elements.push_back(element);
         } else if y2 > y1 {
-            let element = Element::Rectangle(RectangleElement{
+            let element = Element::Rectangle(RectangleElement {
                 x: x1 as i32,
                 y: y1 as i32,
                 width: (self.char_view_end - x1) as i32,
@@ -252,7 +247,7 @@ impl Geometry {
                 bg: (0, 220, 220),
             });
             elements.push_back(element);
-            let element = Element::Rectangle(RectangleElement{
+            let element = Element::Rectangle(RectangleElement {
                 x: self.char_view_start as i32,
                 y: (y1 + self.char_height) as i32,
                 width: self.char_view_width as i32,
@@ -260,7 +255,7 @@ impl Geometry {
                 bg: (0, 220, 220),
             });
             elements.push_back(element);
-            let element = Element::Rectangle(RectangleElement{
+            let element = Element::Rectangle(RectangleElement {
                 x: self.char_view_start as i32,
                 y: y2 as i32,
                 width: (x2 + width - self.char_view_start) as i32,
