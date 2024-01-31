@@ -30,7 +30,7 @@ impl<'a> Plotter<'a> {
         }
     }
 
-    pub fn geometry<D: DataProvider + 'static>(&self, provider: &D) -> (u32, u32) {
+    pub fn calculate_request_size<D: DataProvider + 'static>(&self, provider: &D) -> (u32, u32) {
         (self.config.width(), self.config.height(provider.len()))
     }
 
@@ -38,7 +38,6 @@ impl<'a> Plotter<'a> {
         let view = bhiera.get_view(view_start as u32, view_height as u32);
         match view {
             Some(view) => {
-                let cursors = view.get_cursur();
                 let mut pixel_buffer =
                     SharedPixelBuffer::new(self.config.width(), view_height as u32);
                 let size = (pixel_buffer.width(), pixel_buffer.height());
@@ -47,7 +46,7 @@ impl<'a> Plotter<'a> {
                 let mut style;
                 let mut bg_color;
                 let mut fg_color;
-                for element in view {
+                for element in view.elements() {
                     match element {
                         Element::Byte(text) => {
                             fg_color = RGBColor(text.fg.0, text.fg.1, text.fg.2);
@@ -76,7 +75,7 @@ impl<'a> Plotter<'a> {
                 backend.present().unwrap();
                 drop(backend);
 
-                for (x, y, w, h) in cursors {
+                for (x, y, w, h) in view.cursors() {
                     let (width, height) = (pixel_buffer.width(), pixel_buffer.height());
                     let mut buffer = ImageBuffer::<Rgb<u8>, _>::from_raw(
                         width,
@@ -84,8 +83,8 @@ impl<'a> Plotter<'a> {
                         pixel_buffer.make_mut_bytes(),
                     )
                     .unwrap();
-                    for row in x..(x + w) {
-                        for col in y..(y + h) {
+                    for row in *x..(*x + *w) {
+                        for col in *y..(*y + *h) {
                             if (row < width) && (col < height) {
                                 let p = buffer.get_pixel_mut(row, col);
                                 p.invert();

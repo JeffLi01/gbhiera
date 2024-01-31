@@ -17,7 +17,7 @@ pub fn setup(ui: &GbhieraUI, bhiera: Arc<RwLock<Bhiera>>) {
         move || {
             let data_provider = load_data_provider(handle_weak.clone());
             if let Some(binary_data) = data_provider {
-                let (hexview_width, hexview_height) = plotter.geometry(&binary_data);
+                let (hexview_width, hexview_height) = plotter.calculate_request_size(&binary_data);
                 handle_weak
                     .upgrade_in_event_loop(move |h| {
                         h.set_hexview_width(hexview_width as f32);

@@ -16,14 +16,12 @@ impl View {
             ..Default::default()
         }
     }
-    pub fn get_cursur(&self) -> Vec<(u32, u32, u32, u32)> {
-        self.cursors.to_owned()
-    }
-}
 
-impl Iterator for View {
-    type Item = Element;
-    fn next(&mut self) -> Option<Self::Item> {
-        self.elements.pop_front()
+    pub fn cursors(&self) -> std::slice::Iter<'_, (u32, u32, u32, u32)> {
+        self.cursors.iter()
+    }
+
+    pub fn elements(&self) -> std::collections::vec_deque::Iter<'_, Element> {
+        self.elements.iter()
     }
 }

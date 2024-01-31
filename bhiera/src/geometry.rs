@@ -168,7 +168,6 @@ impl Geometry {
         selection_begin: usize,
         selection_end: usize,
     ) -> VecDeque<Element> {
-        println!("{view_start}, {view_height}, {selection_begin}, {selection_end}");
         let mut elements = VecDeque::new();
         if selection_begin == selection_end {
             return elements;
@@ -185,11 +184,8 @@ impl Geometry {
         if visible_begin >= visible_end {
             return elements;
         }
-        println!("{visible_begin}, {visible_end}");
         let (x1, y1, _, _) = self.hex_coordinate(visible_begin - byte_offset);
         let (x2, y2, width, _) = self.hex_coordinate(visible_end - byte_offset - 1);
-        println!("x1: {x1}, y1: {y1}");
-        println!("x2: {x2}, y2: {y2}, width: {width}");
         if y2 == y1 {
             let element = Element::Rectangle(RectangleElement {
                 x: x1 as i32,
