@@ -48,43 +48,38 @@ impl<'a> Plotter<'a> {
                 let mut fg_color;
                 for element in view.elements() {
                     match element {
-                        Element::Byte(text) => {
-                            fg_color = RGBColor(text.fg.0, text.fg.1, text.fg.2);
+                        Element::Byte { text, x, y, fg } => {
+                            fg_color = RGBColor(fg.0, fg.1, fg.2);
                             style = self.text_style.color(&fg_color);
+                            backend.draw_text(text, &style, (*x, *y)).unwrap();
+                        }
+                        Element::Rectangle {
+                            x,
+                            y,
+                            width,
+                            height,
+                            bg,
+                        } => {
+                            bg_color = RGBColor(bg.0, bg.1, bg.2);
                             backend
-                                .draw_text(&text.text, &style, (text.x, text.y))
+                                .draw_rect((*x, *y), (*x + *width, *y + *height), &bg_color, true)
                                 .unwrap();
                         }
-                        Element::Rectangle(rectangle) => {
-                            bg_color = RGBColor(rectangle.bg.0, rectangle.bg.1, rectangle.bg.2);
-                            backend
-                                .draw_rect(
-                                    (rectangle.x, rectangle.y),
-                                    (
-                                        rectangle.x + rectangle.width,
-                                        rectangle.y + rectangle.height,
-                                    ),
-                                    &bg_color,
-                                    true,
-                                )
-                                .unwrap();
-                        }
-                        Element::Line(line) => {
+                        Element::Line {
+                            from_x,
+                            from_y,
+                            to_x,
+                            to_y,
+                            color,
+                            width,
+                        } => {
                             let shape_style = ShapeStyle {
-                                color: RGBAColor::from(RGBColor(
-                                    line.color.0,
-                                    line.color.1,
-                                    line.color.2,
-                                )),
+                                color: RGBAColor::from(RGBColor(color.0, color.1, color.2)),
                                 filled: true,
-                                stroke_width: line.width,
+                                stroke_width: *width,
                             };
                             backend
-                                .draw_line(
-                                    (line.from_x, line.from_y),
-                                    (line.to_x, line.to_y),
-                                    &shape_style,
-                                )
+                                .draw_line((*from_x, *from_y), (*to_x, *to_y), &shape_style)
                                 .unwrap();
                         }
                     };

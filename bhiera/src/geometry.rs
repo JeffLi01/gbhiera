@@ -3,10 +3,7 @@ use std::{
     collections::VecDeque,
 };
 
-use crate::{
-    element::{LineElement, RectangleElement, TextElement},
-    Element,
-};
+use crate::Element;
 
 #[derive(Clone, Copy, Default)]
 pub struct Geometry {
@@ -142,23 +139,17 @@ impl Geometry {
     }
 
     pub fn bg(&self, height: u32) -> Element {
-        Element::Rectangle(RectangleElement {
-            x: 0,
-            y: 0,
-            width: self.width() as i32,
-            height: height as i32,
-            bg: (255, 255, 255),
-        })
+        Element::rectangle(0, 0, self.width() as i32, height as i32, (255, 255, 255))
     }
 
     pub fn offset_view_bg(&self, height: u32) -> Element {
-        Element::Rectangle(RectangleElement {
-            x: 0,
-            y: 0,
-            width: self.offset_view_width as i32,
-            height: height as i32,
-            bg: (224, 224, 224),
-        })
+        Element::rectangle(
+            0,
+            0,
+            self.offset_view_width as i32,
+            height as i32,
+            (224, 224, 224),
+        )
     }
 
     pub fn selection(
@@ -188,76 +179,76 @@ impl Geometry {
         let (x2, y2, width, _) = self.hex_coordinate(visible_end - byte_offset - 1);
         if y2 == y1 {
             let y = (y1 + self.char_height / 2) as i32;
-            let element = Element::Line(LineElement {
-                from_x: x1 as i32,
-                from_y: y,
-                to_x: (x2 + width) as i32,
-                to_y: y,
-                color: (0, 220, 220),
-                width: self.char_height,
-            });
+            let element = Element::line(
+                x1 as i32,
+                y,
+                (x2 + width) as i32,
+                y,
+                (0, 220, 220),
+                self.char_height,
+            );
             elements.push_back(element);
         } else if y2 > y1 {
-            let element = Element::Rectangle(RectangleElement {
-                x: x1 as i32,
-                y: y1 as i32,
-                width: (self.hex_view_end - x1) as i32,
-                height: self.char_height as i32,
-                bg: (0, 220, 220),
-            });
+            let element = Element::rectangle(
+                x1 as i32,
+                y1 as i32,
+                (self.hex_view_end - x1) as i32,
+                self.char_height as i32,
+                (0, 220, 220),
+            );
             elements.push_back(element);
-            let element = Element::Rectangle(RectangleElement {
-                x: self.hex_view_start as i32,
-                y: (y1 + self.char_height) as i32,
-                width: self.hex_view_width as i32,
-                height: (y2 - y1 - self.char_height) as i32,
-                bg: (0, 220, 220),
-            });
+            let element = Element::rectangle(
+                self.hex_view_start as i32,
+                (y1 + self.char_height) as i32,
+                self.hex_view_width as i32,
+                (y2 - y1 - self.char_height) as i32,
+                (0, 220, 220),
+            );
             elements.push_back(element);
-            let element = Element::Rectangle(RectangleElement {
-                x: self.hex_view_start as i32,
-                y: y2 as i32,
-                width: (x2 + width - self.hex_view_start) as i32,
-                height: self.char_height as i32,
-                bg: (0, 220, 220),
-            });
+            let element = Element::rectangle(
+                self.hex_view_start as i32,
+                y2 as i32,
+                (x2 + width - self.hex_view_start) as i32,
+                self.char_height as i32,
+                (0, 220, 220),
+            );
             elements.push_back(element);
         }
         let (x1, y1, _, _) = self.char_coordinate(visible_begin - byte_offset);
         let (x2, y2, width, _) = self.char_coordinate(visible_end - byte_offset - 1);
         if y2 == y1 {
-            let element = Element::Rectangle(RectangleElement {
-                x: x1 as i32,
-                y: y1 as i32,
-                width: (x2 + width - x1) as i32,
-                height: self.char_height as i32,
-                bg: (0, 220, 220),
-            });
+            let element = Element::rectangle(
+                x1 as i32,
+                y1 as i32,
+                (x2 + width - x1) as i32,
+                self.char_height as i32,
+                (0, 220, 220),
+            );
             elements.push_back(element);
         } else if y2 > y1 {
-            let element = Element::Rectangle(RectangleElement {
-                x: x1 as i32,
-                y: y1 as i32,
-                width: (self.char_view_end - x1) as i32,
-                height: self.char_height as i32,
-                bg: (0, 220, 220),
-            });
+            let element = Element::rectangle(
+                x1 as i32,
+                y1 as i32,
+                (self.char_view_end - x1) as i32,
+                self.char_height as i32,
+                (0, 220, 220),
+            );
             elements.push_back(element);
-            let element = Element::Rectangle(RectangleElement {
-                x: self.char_view_start as i32,
-                y: (y1 + self.char_height) as i32,
-                width: self.char_view_width as i32,
-                height: (y2 - y1 - self.char_height) as i32,
-                bg: (0, 220, 220),
-            });
+            let element = Element::rectangle(
+                self.char_view_start as i32,
+                (y1 + self.char_height) as i32,
+                self.char_view_width as i32,
+                (y2 - y1 - self.char_height) as i32,
+                (0, 220, 220),
+            );
             elements.push_back(element);
-            let element = Element::Rectangle(RectangleElement {
-                x: self.char_view_start as i32,
-                y: y2 as i32,
-                width: (x2 + width - self.char_view_start) as i32,
-                height: self.char_height as i32,
-                bg: (0, 220, 220),
-            });
+            let element = Element::rectangle(
+                self.char_view_start as i32,
+                y2 as i32,
+                (x2 + width - self.char_view_start) as i32,
+                self.char_height as i32,
+                (0, 220, 220),
+            );
             elements.push_back(element);
         }
         elements
@@ -268,12 +259,7 @@ impl Geometry {
         for (line, line_offset) in (0..size).step_by(16).enumerate() {
             let text = format!("{:08X}", offset + line_offset);
             let y = line * self.char_height as usize;
-            let element = Element::Byte(TextElement {
-                text,
-                x: 0,
-                y: y as i32,
-                fg: (117, 117, 117),
-            });
+            let element = Element::byte(text, 0, y as i32, (117, 117, 117));
             elements.push_back(element);
         }
         elements
@@ -292,12 +278,7 @@ impl Geometry {
             }
             let y = line as u32 * self.char_height;
 
-            let element = Element::Byte(TextElement {
-                text,
-                x: x as i32,
-                y: y as i32,
-                fg: (0, 0, 0),
-            });
+            let element = Element::byte(text, x as i32, y as i32, (0, 0, 0));
             elements.push_back(element);
         }
 
@@ -320,12 +301,7 @@ impl Geometry {
             let x = self.char_view_start + index as u32 * self.char_width;
             let y = line as u32 * self.char_height;
 
-            let element = Element::Byte(TextElement {
-                text,
-                x: x as i32,
-                y: y as i32,
-                fg: (0, 0, 0),
-            });
+            let element = Element::byte(text, x as i32, y as i32, (0, 0, 0));
             elements.push_back(element);
         }
         elements
