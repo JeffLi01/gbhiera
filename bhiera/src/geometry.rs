@@ -4,7 +4,7 @@ use std::{
 };
 
 use crate::{
-    element::{RectangleElement, TextElement},
+    element::{LineElement, RectangleElement, TextElement},
     Element,
 };
 
@@ -187,12 +187,14 @@ impl Geometry {
         let (x1, y1, _, _) = self.hex_coordinate(visible_begin - byte_offset);
         let (x2, y2, width, _) = self.hex_coordinate(visible_end - byte_offset - 1);
         if y2 == y1 {
-            let element = Element::Rectangle(RectangleElement {
-                x: x1 as i32,
-                y: y1 as i32,
-                width: (x2 + width - x1) as i32,
-                height: self.char_height as i32,
-                bg: (0, 220, 220),
+            let y = (y1 + self.char_height / 2) as i32;
+            let element = Element::Line(LineElement {
+                from_x: x1 as i32,
+                from_y: y,
+                to_x: (x2 + width) as i32,
+                to_y: y,
+                color: (0, 220, 220),
+                width: self.char_height,
             });
             elements.push_back(element);
         } else if y2 > y1 {
@@ -223,8 +225,6 @@ impl Geometry {
         }
         let (x1, y1, _, _) = self.char_coordinate(visible_begin - byte_offset);
         let (x2, y2, width, _) = self.char_coordinate(visible_end - byte_offset - 1);
-        println!("x1: {x1}, y1: {y1}");
-        println!("x2: {x2}, y2: {y2}, width: {width}");
         if y2 == y1 {
             let element = Element::Rectangle(RectangleElement {
                 x: x1 as i32,

@@ -13,7 +13,17 @@ pub struct RectangleElement {
     pub bg: (u8, u8, u8),
 }
 
+pub struct LineElement {
+    pub from_x: i32,
+    pub from_y: i32,
+    pub to_x: i32,
+    pub to_y: i32,
+    pub color: (u8, u8, u8),
+    pub width: u32,
+}
+
 pub enum Element {
     Byte(TextElement),
     Rectangle(RectangleElement),
+    Line(LineElement),
 }

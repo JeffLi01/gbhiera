@@ -69,6 +69,24 @@ impl<'a> Plotter<'a> {
                                 )
                                 .unwrap();
                         }
+                        Element::Line(line) => {
+                            let shape_style = ShapeStyle {
+                                color: RGBAColor::from(RGBColor(
+                                    line.color.0,
+                                    line.color.1,
+                                    line.color.2,
+                                )),
+                                filled: true,
+                                stroke_width: line.width,
+                            };
+                            backend
+                                .draw_line(
+                                    (line.from_x, line.from_y),
+                                    (line.to_x, line.to_y),
+                                    &shape_style,
+                                )
+                                .unwrap();
+                        }
                     };
                 }
 
